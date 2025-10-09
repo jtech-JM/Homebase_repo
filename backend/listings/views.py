@@ -1,9 +1,11 @@
 from rest_framework import viewsets, permissions, status, filters, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Q, Avg
+from django.db.models import Q, Avg, Sum
 from django.utils import timezone
+from django.utils.timesince import timesince
 from .models import Listing, Booking, MaintenanceRequest, PropertyDocument
+from payments.models import Payment
 from .serializers import (
     ListingSerializer, BookingSerializer, MaintenanceRequestSerializer,
     PropertyDocumentSerializer
@@ -14,7 +16,7 @@ class IsLandlordOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return request.user.role == 'landlord'
+        return request.user.is_authenticated and request.user.role == 'landlord'
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
@@ -26,7 +28,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 class ListingViewSet(viewsets.ModelViewSet):
     serializer_class = ListingSerializer
-    permission_classes = [permissions.IsAuthenticated, IsLandlordOrReadOnly]
+    permission_classes = [IsLandlordOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'description', 'address']
     ordering_fields = ['created_at', 'price', 'status']
@@ -34,10 +36,11 @@ class ListingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'admin':
-            return Listing.objects.all()
-        elif user.role == 'landlord':
-            return Listing.objects.filter(landlord=user)
+        if user.is_authenticated:
+            if user.role == 'admin':
+                return Listing.objects.all()
+            elif user.role == 'landlord':
+                return Listing.objects.filter(landlord=user)
         return Listing.objects.filter(status='available')
 
     def perform_create(self, serializer):
@@ -45,7 +48,7 @@ class ListingViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def dashboard_stats(self, request):
-        if request.user.role != 'landlord':
+        if not request.user.is_authenticated or request.user.role != 'landlord':
             return Response(
                 {'error': 'Not authorized'},
                 status=status.HTTP_403_FORBIDDEN
@@ -67,6 +70,50 @@ class ListingViewSet(viewsets.ModelViewSet):
             'total_bookings': total_bookings,
             'pending_maintenance': maintenance_requests,
         })
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        if not request.user.is_authenticated or request.user.role != 'landlord':
+            return Response(
+                {'error': 'Not authorized'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        listings = Listing.objects.filter(landlord=request.user)
+        active_listings = listings.filter(status='available').count()
+        total_income = Payment.objects.filter(payee=request.user, status='completed').aggregate(total=Sum('amount'))['total'] or 0
+        booked_listings = listings.filter(status='booked').count()
+        occupancy_rate = (booked_listings / listings.count()) * 100 if listings.count() > 0 else 0
+        pending_applications = Booking.objects.filter(listing__landlord=request.user, status='pending').count()
+
+        return Response({
+            'activeListings': active_listings,
+            'totalIncome': total_income,
+            'occupancyRate': round(occupancy_rate, 2),
+            'pendingApplications': pending_applications,
+        })
+
+    @action(detail=False, methods=['get'])
+    def applications(self, request):
+        if not request.user.is_authenticated or request.user.role != 'landlord':
+            return Response(
+                {'error': 'Not authorized'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        bookings = Booking.objects.filter(listing__landlord=request.user).select_related('student', 'listing')
+        data = []
+        for booking in bookings:
+            data.append({
+                'id': booking.id,
+                'studentImage': getattr(booking.student, 'avatar', None),
+                'studentName': booking.student.get_full_name() or booking.student.email,
+                'propertyName': booking.listing.title,
+                'status': booking.status,
+                'timeAgo': timesince(booking.created_at),
+                'message': booking.notes,
+            })
+        return Response(data)
 
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):

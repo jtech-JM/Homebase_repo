@@ -1,9 +1,32 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { Bar, Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function FinancialDashboard() {
-  const router = useRouter();
+  const { data: session } = useSession();
   const [financials, setFinancials] = useState({
     totalRevenue: 0,
     pendingPayments: 0,
@@ -17,14 +40,24 @@ export default function FinancialDashboard() {
   const [dateRange, setDateRange] = useState("month"); // month, quarter, year
 
   useEffect(() => {
-    fetchFinancialData();
-  }, [filter, dateRange]);
+    if (session) {
+      fetchFinancialData();
+    }
+  }, [session, filter, dateRange]);
 
   const fetchFinancialData = async () => {
     try {
       const [financialsRes, transactionsRes] = await Promise.all([
-        fetch(`/api/landlord/financials?range=${dateRange}`),
-        fetch(`/api/landlord/transactions?status=${filter}&range=${dateRange}`)
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/financials/?range=${dateRange}`, {
+          headers: {
+            'Authorization': `Bearer ${session.accessToken}`,
+          },
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/transactions/?status=${filter}&range=${dateRange}`, {
+          headers: {
+            'Authorization': `Bearer ${session.accessToken}`,
+          },
+        })
       ]);
 
       if (!financialsRes.ok || !transactionsRes.ok) {
@@ -45,7 +78,33 @@ export default function FinancialDashboard() {
     }
   };
 
-  if (loading) return <div className="text-center p-4">Loading...</div>;
+  const chartData = {
+    labels: financials.monthlyStats.map(stat => stat.month),
+    datasets: [
+      {
+        label: 'Revenue',
+        data: financials.monthlyStats.map(stat => stat.amount),
+        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+        borderColor: 'rgba(59, 130, 246, 1)',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Monthly Revenue',
+      },
+    },
+  };
+
+  if (!session || loading) return <div className="text-center p-4">Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -92,24 +151,17 @@ export default function FinancialDashboard() {
         </div>
       </div>
 
-      {/* Monthly Statistics */}
+      {/* Monthly Statistics Chart */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Monthly Statistics</h3>
         <div className="h-64">
-          {/* Add Chart.js or other charting library implementation here */}
-          <div className="grid grid-cols-12 gap-2 h-full items-end">
-            {financials.monthlyStats.map((stat, index) => (
-              <div
-                key={index}
-                className="bg-blue-500 rounded-t"
-                style={{ height: `${(stat.amount / Math.max(...financials.monthlyStats.map(s => s.amount))) * 100}%` }}
-              >
-                <div className="text-xs text-center mt-2 transform -rotate-90">
-                  ${stat.amount}
-                </div>
-              </div>
-            ))}
-          </div>
+          {financials.monthlyStats.length > 0 ? (
+            <Bar data={chartData} options={chartOptions} />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              No data available for the selected period
+            </div>
+          )}
         </div>
       </div>
 
@@ -140,23 +192,23 @@ export default function FinancialDashboard() {
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium">{transaction.property.title}</span>
-                      <span className={`px-2 py-1 text-xs rounded-full 
+                      <span className="font-medium">{transaction.listing?.title || 'N/A'}</span>
+                      <span className={`px-2 py-1 text-xs rounded-full
                         ${transaction.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
                       >
                         {transaction.status}
                       </span>
                     </div>
                     <p className="text-sm text-gray-500">
-                      Tenant: {transaction.tenant.name}
+                      Tenant: {transaction.student?.name || 'N/A'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Date: {new Date(transaction.date).toLocaleDateString()}
+                      Date: {new Date(transaction.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-medium">${transaction.amount.toLocaleString()}</div>
-                    <div className="text-sm text-gray-500">{transaction.type}</div>
+                    <div className="text-sm text-gray-500">{transaction.payment_type || 'Payment'}</div>
                   </div>
                 </div>
               </div>

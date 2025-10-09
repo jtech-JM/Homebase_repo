@@ -29,6 +29,7 @@ export default function LandlordDashboard() {
   });
   const [listings, setListings] = useState([]);
   const [recentApplications, setRecentApplications] = useState([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!session) return;
@@ -36,17 +37,34 @@ export default function LandlordDashboard() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const response = await fetch("/api/landlord/dashboard", {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
-        const data = await response.json();
-        setStats(data.stats || {});
-        setListings(data.listings || []);
-        setRecentApplications(data.recentApplications || []);
+        const [listingsRes, applicationsRes, statsRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/listings/?limit=5`, {
+            headers: {
+              'Authorization': `Bearer ${session.accessToken}`,
+            },
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/listings/applications/?limit=5`, {
+            headers: {
+              'Authorization': `Bearer ${session.accessToken}`,
+            },
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/listings/stats/`, {
+            headers: {
+              'Authorization': `Bearer ${session.accessToken}`,
+            },
+          })
+        ]);
+
+        const listingsData = listingsRes.ok ? await listingsRes.json() : [];
+        const applicationsData = applicationsRes.ok ? await applicationsRes.json() : [];
+        const statsData = statsRes.ok ? await statsRes.json() : {};
+
+        setStats(statsData);
+        setListings(listingsData);
+        setRecentApplications(applicationsData);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
@@ -81,7 +99,7 @@ export default function LandlordDashboard() {
           <StatCard title="Active Listings" value={stats.activeListings} icon="🏠" />
           <StatCard
             title="Monthly Income"
-            value={`$${stats.totalIncome.toLocaleString()}`}
+            value={`$${(stats?.totalIncome ?? 0).toLocaleString()}`}
             icon="💰"
             trend={8}
           />
@@ -106,7 +124,7 @@ export default function LandlordDashboard() {
               <p className="text-gray-500">No listings found.</p>
             ) : (
               <div className="space-y-4">
-                {listings.map((listing) => (
+                {(listings).map((listing) => (
                   <div
                     key={listing.id}
                     className="bg-white rounded-lg shadow-sm p-4 flex items-start space-x-4"
@@ -209,4 +227,4 @@ export default function LandlordDashboard() {
       </DashboardLayout>
     </RoleProtectedLayout>
   );
-}
+}  

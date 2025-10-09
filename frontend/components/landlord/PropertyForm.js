@@ -60,12 +60,15 @@ export default function PropertyForm({ property = null }) {
         formData.append('images[]', image);
       });
 
-      const url = property 
-        ? `/api/listings/${property.id}`
-        : '/api/listings';
-      
+      const url = property
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/listings/${property.id}/`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/listings/`;
+
       const response = await fetch(url, {
         method: property ? 'PUT' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')).state.token : ''}`,
+        },
         body: formData,
       });
 

@@ -51,7 +51,7 @@ export default function AdminDashboard() {
       setIsLoading(true);
       setError(false);
       try {
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/admin/dashboard`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/dashboard`, {
           headers: {
             'Authorization': `Bearer ${session?.accessToken}`
           }

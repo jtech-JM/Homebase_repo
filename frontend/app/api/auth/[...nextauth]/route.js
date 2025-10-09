@@ -4,7 +4,7 @@ import FacebookProvider from "next-auth/providers/facebook";
 import GithubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-export default NextAuth({
+const config = {
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -36,7 +36,7 @@ export default NextAuth({
           body: JSON.stringify(credentials),
         });
         const data = await res.json();
-        
+
         if (res.ok && data.access) {
           // Get user details using the token
           const userRes = await fetch("http://localhost:8000/api/auth/users/me/", {
@@ -46,7 +46,7 @@ export default NextAuth({
             },
           });
           const user = await userRes.json();
-          
+
           return {
             ...user,
             accessToken: data.access,
@@ -57,11 +57,8 @@ export default NextAuth({
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-  },
   callbacks: {
-    async jwt({ token, user,account,profile }) {
+    async jwt({ token, user, account, profile }) {
       if (user) {
         token.role = user.role;
         token.id = user.id;
@@ -69,10 +66,17 @@ export default NextAuth({
         token.refreshToken = user.refreshToken;
       }
 
-      
+
       // For OAuth logins (Google, GitHub, Facebook)
       if (account && profile && !user?.accessToken) {
         try {
+          // Parse role from state if available
+          let role = "student"; // default
+          if (account.state) {
+            const state = JSON.parse(account.state);
+            if (state.role) role = state.role;
+          }
+
           // Send user data to Django backend to register/login
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/social_login/`, {
             method: "POST",
@@ -82,6 +86,7 @@ export default NextAuth({
               first_name: profile.given_name || profile.name?.split(" ")[0],
               last_name: profile.family_name || profile.name?.split(" ")[1],
               provider: account.provider,
+              role: role,
             }),
           });
 
@@ -90,6 +95,8 @@ export default NextAuth({
           token.id = backendUser.id;
           token.role = backendUser.role;
           token.verification_status = backendUser.verification_status;
+          token.accessToken = backendUser.access;
+          token.refreshToken = backendUser.refresh;
         } catch (err) {
           console.error("Error syncing OAuth login with backend:", err);
         }
@@ -104,4 +111,8 @@ export default NextAuth({
       return session;
     },
   },
-});
+};
+
+const handler = NextAuth(config);
+
+export { handler as GET, handler as POST };

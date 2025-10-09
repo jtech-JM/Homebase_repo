@@ -1,12 +1,18 @@
 from rest_framework import serializers
 from .models import Listing, Booking, MaintenanceRequest, PropertyDocument
 from users.serializers import UserSerializer
+from django.utils.timesince import timesince
 
 class ListingSerializer(serializers.ModelSerializer):
     landlord = UserSerializer(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     property_type_display = serializers.CharField(source='get_property_type_display', read_only=True)
-    
+    image = serializers.SerializerMethodField()
+    location = serializers.CharField(source='address')
+
+    def get_image(self, obj):
+        return obj.images[0] if obj.images else None
+
     class Meta:
         model = Listing
         fields = '__all__'
@@ -15,6 +21,19 @@ class BookingSerializer(serializers.ModelSerializer):
     student = UserSerializer(read_only=True)
     listing = ListingSerializer(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    studentImage = serializers.SerializerMethodField()
+    studentName = serializers.SerializerMethodField()
+    propertyName = serializers.CharField(source='listing.title')
+    timeAgo = serializers.SerializerMethodField()
+
+    def get_studentImage(self, obj):
+        return getattr(obj.student, 'avatar', None)
+
+    def get_studentName(self, obj):
+        return obj.student.get_full_name() or obj.student.email
+
+    def get_timeAgo(self, obj):
+        return timesince(obj.created_at)
 
     class Meta:
         model = Booking
@@ -54,18 +73,7 @@ class SimpleBookingSerializer(serializers.ModelSerializer):
 
 class SimpleMaintenanceRequestSerializer(serializers.ModelSerializer):
     listing = SimpleListingSerializer(read_only=True)
-    
+
     class Meta:
         model = MaintenanceRequest
         fields = ['id', 'title', 'status', 'priority', 'created_at']
-from .models import Listing, Booking
-
-class ListingSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Listing
-        fields = "__all__"
-
-class BookingSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Booking
-        fields = "__all__"

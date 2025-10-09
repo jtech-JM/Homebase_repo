@@ -15,7 +15,11 @@ export default function TenantList() {
 
   const fetchTenants = async () => {
     try {
-      const response = await fetch(`/api/tenants?status=${filter}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tenants/?status=${filter}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')).state.token : ''}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch tenants');
       const data = await response.json();
       setTenants(data);
@@ -28,10 +32,11 @@ export default function TenantList() {
 
   const handleStatusChange = async (tenantId, status) => {
     try {
-      const response = await fetch(`/api/tenants/${tenantId}/status`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tenants/${tenantId}/status/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')).state.token : ''}`,
         },
         body: JSON.stringify({ status }),
       });

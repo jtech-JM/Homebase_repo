@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import PropertyForm from '@/components/landlord/PropertyForm';
-import { landlordSidebarItems } from '../page';
+import { landlordSidebarItems } from '@/app/dashboard/landlord/page';
+
 
 export default function NewPropertyPage() {
   return (

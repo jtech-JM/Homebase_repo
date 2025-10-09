@@ -25,7 +25,7 @@ urlpatterns = [
     path("api/auth/", include("djoser.urls")),
     path("api/auth/", include("djoser.urls.jwt")),
     path("api/social-auth/", include("social_django.urls", namespace="social")),
-    path("api/auth/", include("dj_rest_auth.urls")),
+   # path("api/auth/", include("dj_rest_auth.urls")),
 
     path("api/rbac/", include("rbac.urls")),
     path("api/", include("listings.urls")),

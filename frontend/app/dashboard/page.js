@@ -23,6 +23,11 @@ export default function DashboardPage() {
       return;
     }
 
+    if (session.user?.role === "pending") {
+      router.push("/select_role");
+      return;
+    }
+
     const userRole = session.user?.role;
     switch (userRole) {
       case "admin":
