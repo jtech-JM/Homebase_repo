@@ -1,0 +1,38 @@
+@startuml AuthProcess
+
+start
+
+:User visits site;
+
+if (New user?) then (yes)
+  :Click Register;
+  :Fill registration form;
+  :Submit details;
+  
+  if (Email available?) then (yes)
+    :Create account;
+    :Show success message;
+    :Go to login;
+  else (no)
+    :Show error;
+    :Try again;
+  endif
+  
+else (no)
+  :Click Login;
+  :Enter email & password;
+  :Submit credentials;
+  
+  if (Credentials correct?) then (yes)
+    :Login successful;
+    :Redirect to dashboard;
+    stop
+  else (no)
+    :Show error;
+    :Try again;
+  endif
+endif
+
+:Return to start;
+
+@enduml

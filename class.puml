@@ -1,0 +1,63 @@
+@startuml
+class User {
+  id: int
+  email: string
+  role: string
+  phone: string
+  is_active: bool
+  ...
+}
+
+class Student {
+  university: string
+  student_id: string
+}
+class Landlord {
+  national_id: string
+}
+class Agent {
+  national_id: string
+  campus_region: string
+}
+class Listing {
+  id: int
+  title: string
+  owner: User
+  ...
+}
+class Payment {
+  id: int
+  amount: float
+  user: User
+  listing: Listing
+  ...
+}
+class Verification {
+  id: int
+  user: User
+  status: string
+  ...
+}
+class Profile {
+  id: int
+  user: User
+  verified: bool
+  ...
+}
+class RBAC {
+  id: int
+  user: User
+  role: string
+  ...
+}
+
+User "1" -- "1" Student
+User "1" -- "1" Landlord
+User "1" -- "1" Agent
+User "1" -- "*" Listing
+User "1" -- "*" Payment
+User "1" -- "1" Verification
+User "1" -- "1" Profile
+User "*" -- "*" RBAC
+Listing "*" -- "1" Payment
+@enduml

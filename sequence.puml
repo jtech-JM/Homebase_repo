@@ -1,0 +1,33 @@
+@startuml
+actor User
+participant "Frontend (Next.js)" as Frontend
+participant "Backend (Django API)" as Backend
+participant "Authentication Service" as Auth
+participant "Payments Service" as Payments
+database "Database" as DB
+participant "Payment Gateway" as Gateway
+
+User -> Frontend : Initiate Payment (login required)
+Frontend -> Backend : POST /api/auth/login
+Backend -> Auth : Validate credentials
+Auth -> DB : Query user
+DB --> Auth : User data
+Auth --> Backend : Auth success (token)
+Backend --> Frontend : Auth token
+
+User -> Frontend : Submit Payment Details
+Frontend -> Backend : POST /api/payments
+Backend -> Payments : Validate payment request
+Payments -> Auth : Check user token
+Auth -> DB : Query user
+DB --> Auth : User data
+Auth --> Payments : User valid
+Payments -> DB : Create payment record
+DB --> Payments : Payment record created
+Payments -> Gateway : Process payment
+Gateway --> Payments : Payment confirmation
+Payments --> Backend : Payment success
+Backend --> Frontend : Payment result
+Frontend --> User : Show payment confirmation
+
+@enduml

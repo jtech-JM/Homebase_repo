@@ -1,0 +1,94 @@
+@startuml SystemArchitecture
+
+node "Web Browser" {
+  component "React App" as React
+  component "API Client" as Client
+  component "Local Storage" as Local
+}
+
+node "Cloud Server" {
+  frame "Django Backend" {
+    component "NGINX" as Nginx
+    component "Gunicorn" as Gunicorn
+    component "Django App" as Django
+    
+    package "API Layer" {
+      [REST API] as REST
+      [Authentication] as Auth
+      [URL Router] as Router
+    }
+    
+    package "Business Layer" {
+      [ViewSets] as Views
+      [Serializers] as Serializers
+      [Models] as Models
+      [Permissions] as Perms
+    }
+  }
+  
+  frame "Database Layer" {
+    database "PostgreSQL" as PG
+    database "Redis" as Redis
+    database "AWS S3" as S3
+  }
+}
+
+frame "External Services" {
+  [Stripe Payments] as Stripe
+  [SendGrid Email] as SendGrid
+  [Google Maps] as Maps
+}
+
+' Data Flow
+React -> Client : HTTP Calls
+Client -> Nginx : API Requests
+Nginx -> Gunicorn : Proxy
+Gunicorn -> Django : WSGI
+Django -> REST : Request Handling
+REST -> Auth : JWT Validation
+Auth -> Router : Route to ViewSet
+Router -> Views : Execute View
+Views -> Perms : Check Permissions
+Perms -> Views : Allow/Deny
+Views -> Serializers : Validate Data
+Serializers -> Models : Create/Update
+Models -> PG : Database Operations
+Models -> S3 : File Storage
+Models -> Redis : Cache/Sessions
+
+' External integrations
+Views -> Stripe : Process Payment
+Views -> SendGrid : Send Email
+Views -> Maps : Geocoding
+
+' Response flow
+PG -> Models : Query Results
+Models -> Serializers : Python Objects
+Serializers -> Views : JSON Data
+Views -> REST : HTTP Response
+REST -> Django : Response
+Django -> Gunicorn : WSGI Response
+Gunicorn -> Nginx : Proxy
+Nginx -> Client : JSON Response
+Client -> React : Update UI
+
+' Local storage
+React -> Local : Store Tokens
+Local -> React : Retrieve Data
+
+note right of React
+  Single Page Application
+  with modern JavaScript
+end note
+
+note right of Django
+  Django REST Framework
+  with ViewSets & Serializers
+end note
+
+note right of PG
+  Main database for all
+  application data
+end note
+
+@enduml

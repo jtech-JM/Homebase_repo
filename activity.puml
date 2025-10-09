@@ -1,0 +1,65 @@
+@startuml PlatformUseCases
+
+left to right direction
+
+actor Student as Student
+actor Landlord as Landlord
+actor Agent as Agent
+actor Administrator as Admin
+actor System as System
+
+rectangle "Student Accommodation Platform" {
+  (Browse Listings) as Browse
+  (Search Properties) as Search
+  (Book Property) as Book
+  (Make Payment) as Pay
+  (Request Maintenance) as Maintenance
+  (Write Reviews) as Review
+  (Send Messages) as Message
+  
+  (Create Listing) as CreateList
+  (Manage Properties) as ManageProp
+  (Approve Bookings) as Approve
+  (Handle Maintenance) as HandleMaint
+  (Upload Documents) as UploadDoc
+  (View Dashboard) as Dashboard
+  
+  (Manage Users) as ManageUsers
+  (Verify Documents) as Verify
+  (System Monitoring) as Monitor
+  (Generate Reports) as Reports
+  
+  (Process Payments) as ProcessPay
+  (Send Notifications) as Notify
+  (Manage Escrow) as Escrow
+}
+
+Student --> Browse
+Student --> Search
+Student --> Book
+Student --> Pay
+Student --> Maintenance
+Student --> Review
+Student --> Message
+
+Landlord --> CreateList
+Landlord --> ManageProp
+Landlord --> Approve
+Landlord --> HandleMaint
+Landlord --> UploadDoc
+Landlord --> Dashboard
+
+Admin --> ManageUsers
+Admin --> Verify
+Admin --> Monitor
+Admin --> Reports
+
+System --> ProcessPay
+System --> Notify
+System --> Escrow
+
+Book ..> Pay : <<include>>
+CreateList ..> UploadDoc : <<include>>
+ManageProp ..> HandleMaint : <<include>>
+
+@enduml

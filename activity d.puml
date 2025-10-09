@@ -1,0 +1,70 @@
+@startuml PlatformSequence
+
+actor Student
+actor Landlord
+actor Admin
+participant Frontend
+participant Backend
+database Database
+
+Student -> Frontend: Browse listings
+Frontend -> Backend: Get available listings
+Backend -> Database: Query listings
+Database -> Backend: Return listings
+Backend -> Frontend: Listings data
+Frontend -> Student: Show properties
+
+Student -> Frontend: Select & book property
+Frontend -> Backend: Create booking request
+Backend -> Database: Save booking
+Database -> Backend: Booking confirmed
+Backend -> Frontend: Booking pending
+Frontend -> Student: Waiting for approval
+
+Landlord -> Frontend: View booking requests
+Frontend -> Backend: Get pending bookings
+Backend -> Database: Query bookings
+Database -> Backend: Return bookings
+Backend -> Frontend: Bookings data
+Frontend -> Landlord: Show requests
+
+Landlord -> Frontend: Approve booking
+Frontend -> Backend: Update booking status
+Backend -> Database: Mark booking approved
+Backend -> Database: Update listing status
+Database -> Backend: Updates saved
+Backend -> Frontend: Approval confirmed
+Frontend -> Landlord: Show confirmation
+Frontend -> Student: Send notification
+
+Student -> Frontend: Make payment
+Frontend -> Backend: Process payment
+Backend -> Database: Record payment
+Database -> Backend: Payment saved
+Backend -> Frontend: Payment success
+Frontend -> Student: Payment confirmed
+
+Student -> Frontend: Request maintenance
+Frontend -> Backend: Create maintenance request
+Backend -> Database: Save request
+Database -> Backend: Request saved
+Backend -> Frontend: Request confirmed
+Frontend -> Student: Request submitted
+Frontend -> Landlord: Send notification
+
+Landlord -> Frontend: Handle maintenance
+Frontend -> Backend: Update maintenance status
+Backend -> Database: Update request
+Database -> Backend: Update saved
+Backend -> Frontend: Status updated
+Frontend -> Landlord: Show update
+Frontend -> Student: Send progress
+
+Admin -> Frontend: View system dashboard
+Frontend -> Backend: Get system stats
+Backend -> Database: Query all data
+Database -> Backend: Return statistics
+Backend -> Frontend: Stats data
+Frontend -> Admin: Show dashboard
+
+@enduml
