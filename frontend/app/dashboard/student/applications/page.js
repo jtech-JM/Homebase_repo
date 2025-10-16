@@ -1,23 +1,35 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { studentSidebarItems } from '../page';
 import Link from 'next/link';
 
 export default function StudentApplications() {
+  const { data: session } = useSession();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchApplications();
-  }, []);
+    if (session) {
+      fetchApplications();
+    }
+  }, [session]);
 
   const fetchApplications = async () => {
     try {
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/student/applications`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/student/applications/`, {
+        headers: {
+          'Authorization': `Bearer ${session.accessToken}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch applications');
       const data = await response.json();
       setApplications(data);
     } catch (error) {
       console.error('Error fetching applications:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -41,10 +53,17 @@ export default function StudentApplications() {
   if (loading) return <div className="text-center p-4">Loading...</div>;
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4">
-      <h1 className="text-2xl font-semibold mb-6">My Applications</h1>
-      
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+    <DashboardLayout sidebarItems={studentSidebarItems}>
+      <div className="p-6">
+        <h1 className="text-2xl font-semibold mb-6">My Applications</h1>
+
+        {error && (
+          <div className="p-3 bg-red-50 text-red-700 rounded border border-red-200 mb-4">
+            {error}
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow overflow-hidden">
         {applications.length === 0 ? (
           <div className="p-6 text-center">
             <p className="text-gray-500 mb-4">You haven't submitted any applications yet.</p>
@@ -125,6 +144,7 @@ export default function StudentApplications() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

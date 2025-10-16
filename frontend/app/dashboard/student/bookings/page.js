@@ -1,23 +1,35 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { studentSidebarItems } from '../page';
 import Link from 'next/link';
 
 export default function StudentBookings() {
+  const { data: session } = useSession();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    if (session) {
+      fetchBookings();
+    }
+  }, [session]);
 
   const fetchBookings = async () => {
     try {
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/bookings/`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/`, {
+        headers: {
+          'Authorization': `Bearer ${session.accessToken}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch bookings');
       const data = await response.json();
       setBookings(data);
     } catch (error) {
       console.error('Error fetching bookings:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -26,10 +38,17 @@ export default function StudentBookings() {
   if (loading) return <div className="text-center p-4">Loading...</div>;
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4">
-      <h1 className="text-2xl font-semibold mb-6">My Bookings</h1>
+    <DashboardLayout sidebarItems={studentSidebarItems}>
+      <div className="p-6">
+        <h1 className="text-2xl font-semibold mb-6">My Bookings</h1>
 
-      {bookings.length === 0 ? (
+        {error && (
+          <div className="p-3 bg-red-50 text-red-700 rounded border border-red-200 mb-4">
+            {error}
+          </div>
+        )}
+
+        {bookings.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-6 text-center">
           <p className="text-gray-500 mb-4">You don't have any active bookings.</p>
           <Link
@@ -106,6 +125,7 @@ export default function StudentBookings() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

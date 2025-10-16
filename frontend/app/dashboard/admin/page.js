@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import StatCard from '@/components/dashboard/StatCard';
 import ActionCard from '@/components/dashboard/ActionCard';
 
-const adminSidebarItems = [
+export const adminSidebarItems = [
   { label: 'Overview', href: '/dashboard/admin', icon: '📊' },
   { label: 'User Management', href: '/dashboard/admin/users', icon: '👥' },
   { label: 'Property Management', href: '/dashboard/admin/properties', icon: '🏠' },
@@ -35,17 +35,17 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Check authentication and role
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/login');
       return;
     }
-    
+
     if (session.user?.role !== 'admin') {
       router.push('/dashboard');
       return;
     }
-    
+
     // Fetch dashboard data
     const fetchDashboardData = async () => {
       setIsLoading(true);

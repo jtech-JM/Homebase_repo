@@ -16,7 +16,7 @@ export default function DocumentManager() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await fetch(`/api/documents?type=${filter}`);
+      const response = await fetch(`/api/property-documents?document_type=${filter}`);
       if (!response.ok) throw new Error('Failed to fetch documents');
       const data = await response.json();
       setDocuments(data);
@@ -33,12 +33,13 @@ export default function DocumentManager() {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('type', document.getElementById('documentType').value);
+    formData.append('document_type', document.getElementById('documentType').value);
+    formData.append('title', document.getElementById('title').value);
     formData.append('description', document.getElementById('description').value);
 
     try {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/documents', true);
+      xhr.open('POST', '/api/property-documents', true);
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -48,7 +49,7 @@ export default function DocumentManager() {
       };
 
       xhr.onload = () => {
-        if (xhr.status === 200) {
+        if (xhr.status === 201) {
           fetchDocuments();
           setUploadProgress(0);
         } else {
@@ -67,7 +68,7 @@ export default function DocumentManager() {
     if (!confirm('Are you sure you want to delete this document?')) return;
 
     try {
-      const response = await fetch(`/api/documents/${documentId}`, {
+      const response = await fetch(`/api/property-documents/${documentId}`, {
         method: 'DELETE',
       });
 
@@ -120,6 +121,15 @@ export default function DocumentManager() {
               <option value="legal">Legal Document</option>
               <option value="other">Other</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Title</label>
+            <input
+              type="text"
+              id="title"
+              className="w-full p-2 border rounded"
+              placeholder="Enter document title"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Description</label>
@@ -175,16 +185,16 @@ export default function DocumentManager() {
                       >
                         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                       </svg>
-                      <span className="font-medium">{doc.name}</span>
+                      <span className="font-medium">{doc.title}</span>
                       <span className={`px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800`}>
-                        {doc.type}
+                        {doc.document_type_display}
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">
                       {doc.description}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Uploaded: {new Date(doc.uploadedAt).toLocaleDateString()}
+                      Uploaded: {new Date(doc.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex space-x-2">

@@ -22,7 +22,7 @@ export default function MaintenanceRequests() {
 
   const fetchRequests = async () => {
     try {
-      const response = await fetch(`/api/maintenance?status=${filter}&sort=${sortBy}`);
+      const response = await fetch(`/api/maintenance-requests?status=${filter}&ordering=${sortBy === 'date' ? '-created_at' : sortBy === 'priority' ? '-priority' : '-created_at'}`);
       if (!response.ok) throw new Error('Failed to fetch maintenance requests');
       const data = await response.json();
       setRequests(data);
@@ -35,8 +35,8 @@ export default function MaintenanceRequests() {
 
   const updateRequestStatus = async (requestId, status) => {
     try {
-      const response = await fetch(`/api/maintenance/${requestId}`, {
-        method: 'PUT',
+      const response = await fetch(`/api/maintenance-requests/${requestId}/update_status/`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },

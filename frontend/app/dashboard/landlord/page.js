@@ -14,6 +14,9 @@ export const landlordSidebarItems = [
   { label: "Tenants", href: "/dashboard/landlord/tenants", icon: "👥" },
   { label: "Messages", href: "/dashboard/landlord/messages", icon: "💬" },
   { label: "Payments", href: "/dashboard/landlord/payments", icon: "💰" },
+  { label: "Financials", href: "/dashboard/landlord/financials", icon: "💳" },
+  { label: "Maintenance", href: "/dashboard/landlord/maintenance", icon: "🔧" },
+  { label: "Documents", href: "/dashboard/landlord/documents", icon: "📄" },
   { label: "Reports", href: "/dashboard/landlord/reports", icon: "📈" },
   { label: "Support", href: "/dashboard/landlord/support", icon: "🎧" },
 ];

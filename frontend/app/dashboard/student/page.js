@@ -5,8 +5,9 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import StatCard from '@/components/dashboard/StatCard';
 import ActionCard from '@/components/dashboard/ActionCard';
 import RoleProtectedLayout from '@/components/auth/RoleProtectedLayout';
+import Link from 'next/link';
 
-const studentSidebarItems = [
+export const studentSidebarItems = [
   { label: 'Overview', href: '/dashboard/student', icon: '📊' },
   { label: 'Search Housing', href: '/dashboard/student/search', icon: '🔍' },
   { label: 'My Bookings', href: '/dashboard/student/bookings', icon: '📅' },
@@ -27,27 +28,63 @@ export default function StudentDashboard() {
 
   const [recommendedListings, setRecommendedListings] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch student dashboard data
-    const fetchDashboardData = async () => {
-      try {
-        const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/student/dashboard`, {
-          headers: {
-            'Authorization': `Bearer ${session.accessToken}`,
-          },
-        });
-        const data = await response.json();
-        setProfile(data.profile);
-        setRecommendedListings(data.recommendedListings);
-        setRecentActivity(data.recentActivity);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      }
-    };
+    if (session) {
+      fetchDashboardData();
+    }
+  }, [session]);
 
-    fetchDashboardData();
-  }, []);
+  const fetchDashboardData = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/student/dashboard/`, {
+        headers: {
+          'Authorization': `Bearer ${session.accessToken}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch dashboard data');
+      const data = await response.json();
+      setProfile(data.profile || profile);
+      setRecommendedListings(data.recommendedListings || []);
+      setRecentActivity(data.recentActivity || []);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Set default data for demo purposes
+      setRecommendedListings([
+        {
+          id: 1,
+          title: 'Modern Studio Near Campus',
+          location: 'University District',
+          price: 800,
+          image: '/placeholder.png'
+        },
+        {
+          id: 2,
+          title: 'Shared Apartment',
+          location: 'Downtown',
+          price: 600,
+          image: '/placeholder.png'
+        }
+      ]);
+      setRecentActivity([
+        {
+          icon: '🔍',
+          title: 'Searched for apartments',
+          description: 'Found 5 properties matching your criteria',
+          time: '2 hours ago'
+        },
+        {
+          icon: '📅',
+          title: 'Booking confirmed',
+          description: 'Your booking for Modern Studio has been confirmed',
+          time: '1 day ago'
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <RoleProtectedLayout allowedRoles={['student']}>
