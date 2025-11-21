@@ -19,7 +19,7 @@ export default function StudentApplications() {
 
   const fetchApplications = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/student/applications/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/listings/student/applications/`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
         },
@@ -120,9 +120,7 @@ export default function StudentApplications() {
                       {new Date(application.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        getStatusBadgeColor(application.status)
-                      }`}>
+                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeColor(application.status)}`}>
                         {application.status.replace('_', ' ')}
                       </span>
                     </td>

@@ -1,7 +1,8 @@
-"use client";
+'use client';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import UserAvatar from '@/components/UserAvatar';
 import { studentSidebarItems } from '../page';
 
 export default function StudentMessagesPage() {
@@ -21,7 +22,7 @@ export default function StudentMessagesPage() {
 
   const fetchConversations = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/conversations/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/conversations/conversations/`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
         },
@@ -39,7 +40,7 @@ export default function StudentMessagesPage() {
 
   const fetchMessages = async (conversationId) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/${conversationId}/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/conversations/${conversationId}/messages/`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
         },
@@ -57,7 +58,7 @@ export default function StudentMessagesPage() {
     if (!newMessage.trim() || !selectedConversation) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/${selectedConversation.id}/send/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/conversations/${selectedConversation.id}/send/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +80,7 @@ export default function StudentMessagesPage() {
 
   return (
     <DashboardLayout sidebarItems={studentSidebarItems}>
-      <div className="p-6">
+      <div>
         <h1 className="text-2xl font-semibold mb-6">Messages</h1>
 
         {error && (
@@ -112,20 +113,16 @@ export default function StudentMessagesPage() {
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <img
-                        src={conversation.participant.avatar || '/default-avatar.png'}
-                        alt={conversation.participant.name}
-                        className="w-10 h-10 rounded-full"
-                      />
+                      <UserAvatar user={conversation.participant} size="sm" />
                       <div className="flex-1">
                         <p className="font-medium">{conversation.participant.name}</p>
                         <p className="text-sm text-gray-500 truncate">
-                          {conversation.lastMessage || 'No messages yet'}
+                          {conversation.last_message || 'No messages yet'}
                         </p>
                       </div>
-                      {conversation.unreadCount > 0 && (
+                      {conversation.unread_count > 0 && (
                         <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                          {conversation.unreadCount}
+                          {conversation.unread_count}
                         </span>
                       )}
                     </div>
@@ -141,14 +138,10 @@ export default function StudentMessagesPage() {
               <>
                 <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center space-x-3">
-                    <img
-                      src={selectedConversation.participant.avatar || '/default-avatar.png'}
-                      alt={selectedConversation.participant.name}
-                      className="w-10 h-10 rounded-full"
-                    />
+                    <UserAvatar user={selectedConversation.participant} size="sm" showOnlineStatus />
                     <div>
                       <h2 className="text-lg font-medium">{selectedConversation.participant.name}</h2>
-                      <p className="text-sm text-gray-500">{selectedConversation.property?.title}</p>
+                      <p className="text-sm text-gray-500">{selectedConversation.listing?.title}</p>
                     </div>
                   </div>
                 </div>
@@ -157,11 +150,11 @@ export default function StudentMessagesPage() {
                     {messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`mb-4 flex ${message.sender === 'student' ? 'justify-end' : 'justify-start'}`}
+                        className={`mb-4 flex ${message.sender === session.user.id ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
                           className={`max-w-xs px-4 py-2 rounded-lg ${
-                            message.sender === 'student'
+                            message.sender === session.user.id
                               ? 'bg-blue-600 text-white'
                               : 'bg-gray-200 text-gray-900'
                           }`}

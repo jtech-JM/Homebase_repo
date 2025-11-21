@@ -38,9 +38,10 @@ export default function SelectRole() {
       });
 
       if (res.ok) {
+        const data = await res.json();
         // Update session with new role
-        await update({ role });
-        router.push("/dashboard");
+        await update({ role: data.role });
+        router.push(data.redirect_url || "/dashboard");
       } else {
         const data = await res.json();
         setError(data.error || "Failed to update role");

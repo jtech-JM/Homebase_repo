@@ -6,15 +6,16 @@ import StatCard from '@/components/dashboard/StatCard';
 import ActionCard from '@/components/dashboard/ActionCard';
 import RoleProtectedLayout from '@/components/auth/RoleProtectedLayout';
 import Link from 'next/link';
+import { Search, Calendar, Heart, MessageCircle, User, GraduationCap, CreditCard, TrendingUp, MapPin, Star, LayoutDashboard, Home, Users, Headphones, DollarSign } from 'lucide-react';
 
 export const studentSidebarItems = [
-  { label: 'Overview', href: '/dashboard/student', icon: '📊' },
-  { label: 'Search Housing', href: '/dashboard/student/search', icon: '🔍' },
-  { label: 'My Bookings', href: '/dashboard/student/bookings', icon: '📅' },
-  { label: 'Messages', href: '/dashboard/student/messages', icon: '💬' },
-  { label: 'Payments', href: '/dashboard/student/payments', icon: '💰' },
-  { label: 'Community', href: '/dashboard/student/community', icon: '👥' },
-  { label: 'Support', href: '/dashboard/student/support', icon: '🎧' },
+  { label: 'Overview', href: '/dashboard/student', icon: <LayoutDashboard className="w-5 h-5" /> },
+  { label: 'Search Housing', href: '/dashboard/student/search', icon: <Search className="w-5 h-5" /> },
+  { label: 'My Bookings', href: '/dashboard/student/bookings', icon: <Calendar className="w-5 h-5" /> },
+  { label: 'Messages', href: '/dashboard/student/messages', icon: <MessageCircle className="w-5 h-5" /> },
+  { label: 'Payments', href: '/dashboard/student/payments', icon: <DollarSign className="w-5 h-5" /> },
+  { label: 'Community', href: '/dashboard/student/community', icon: <Users className="w-5 h-5" /> },
+  { label: 'Support', href: '/dashboard/student/support', icon: <Headphones className="w-5 h-5" /> },
 ];
 
 export default function StudentDashboard() {
@@ -38,7 +39,7 @@ export default function StudentDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/student/dashboard/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/dashboard/`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
         },
@@ -90,62 +91,101 @@ export default function StudentDashboard() {
     <RoleProtectedLayout allowedRoles={['student']}>
       <DashboardLayout sidebarItems={studentSidebarItems}>
       {/* Welcome Section */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Welcome back!</h1>
-            <p className="text-gray-600">Find your perfect student accommodation</p>
-          </div>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-            Start Search
-          </button>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Welcome back, Student!</h1>
+          <p className="text-gray-600 mt-1">Find your perfect student accommodation</p>
         </div>
+        <Link
+          href="/dashboard/student/search"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm hover:shadow-md"
+        >
+          <Search className="w-5 h-5" />
+          Start Search
+        </Link>
       </div>
 
       {/* Profile Status and Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Verification Status"
-          value={profile.verificationStatus === 'verified' ? 'Verified ✅' : 'Pending ⏳'}
-          icon="🆔"
-        />
-        <StatCard
-          title="Active Bookings"
-          value={profile.activeBookings}
-          icon="📅"
-        />
-        <StatCard
-          title="Saved Listings"
-          value={profile.savedListings}
-          icon="❤️"
-        />
-        <StatCard
-          title="Unread Messages"
-          value={profile.unreadMessages}
-          icon="💬"
-        />
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Verification Status</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">
+                {profile.verificationStatus === 'verified' ? 'Verified' : 'Pending'}
+              </p>
+            </div>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+              profile.verificationStatus === 'verified'
+                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600'
+                : 'bg-gradient-to-br from-amber-500 to-amber-600'
+            }`}>
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active Bookings</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{profile.activeBookings}</p>
+            </div>
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Saved Listings</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{profile.savedListings}</p>
+            </div>
+            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+              <Heart className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Unread Messages</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{profile.unreadMessages}</p>
+            </div>
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <MessageCircle className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Recommendations and Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div>
-          <h2 className="text-lg font-semibold mb-4">Recommended for You</h2>
+          <h2 className="text-xl font-semibold mb-6 text-gray-900">Recommended for You</h2>
           <div className="space-y-4">
             {recommendedListings.map((listing, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div key={index} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
                 <img
                   src={listing.image}
                   alt={listing.title}
                   className="w-full h-48 object-cover"
                 />
-                <div className="p-4">
-                  <h3 className="font-semibold">{listing.title}</h3>
-                  <p className="text-gray-500 text-sm">{listing.location}</p>
-                  <div className="mt-2 flex justify-between items-center">
-                    <span className="text-blue-600 font-semibold">${listing.price}/month</span>
-                    <button className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm">
+                <div className="p-6">
+                  <h3 className="font-semibold text-lg text-gray-900">{listing.title}</h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                    <p className="text-gray-500 text-sm">{listing.location}</p>
+                  </div>
+                  <div className="mt-4 flex justify-between items-center">
+                    <span className="text-blue-600 font-bold text-lg">${listing.price}/month</span>
+                    <Link
+                      href={`/dashboard/student/listing/${listing.id}`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-sm font-medium"
+                    >
+                      <Star className="w-4 h-4" />
                       View Details
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -154,30 +194,59 @@ export default function StudentDashboard() {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-semibold mb-6 text-gray-900">Quick Actions</h2>
           <div className="space-y-4">
-            <ActionCard
-              title="Complete Your Profile"
-              description="Add missing information to improve your chances"
-              actionLabel="Update Profile"
-              icon="👤"
-              onAction={() => {}}
-            />
-            <ActionCard
-              title="Verify Your Student Status"
-              description="Upload your student ID to get verified"
-              actionLabel="Verify Now"
-              icon="📚"
-              onAction={() => {}}
-            />
+            <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 group cursor-pointer">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Complete Your Profile</h3>
+              </div>
+              <p className="text-gray-600 mb-4">Add missing information to improve your chances</p>
+              <Link
+                href="/dashboard/student/profile"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+              >
+                <User className="w-4 h-4" />
+                Update Profile
+              </Link>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 group cursor-pointer">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Verify Your Student Status</h3>
+              </div>
+              <p className="text-gray-600 mb-4">Upload your student ID to get verified</p>
+              <Link
+                href="/verification"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+              >
+                <GraduationCap className="w-4 h-4" />
+                Verify Now
+              </Link>
+            </div>
+
             {profile.activeBookings > 0 && (
-              <ActionCard
-                title="Upcoming Rent Payment"
-                description="Due in 5 days"
-                actionLabel="Pay Now"
-                icon="💳"
-                onAction={() => {}}
-              />
+              <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 group cursor-pointer">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
+                    <CreditCard className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Upcoming Rent Payment</h3>
+                </div>
+                <p className="text-gray-600 mb-4">Due in 5 days</p>
+                <Link
+                  href="/dashboard/student/payments"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg hover:from-amber-700 hover:to-amber-800 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Pay Now
+                </Link>
+              </div>
             )}
           </div>
         </div>
@@ -185,16 +254,18 @@ export default function StudentDashboard() {
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <ul className="space-y-4">
+        <h2 className="text-xl font-semibold mb-6 text-gray-900">Recent Activity</h2>
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+          <ul className="space-y-6">
             {recentActivity.map((activity, index) => (
-              <li key={index} className="flex items-start space-x-3">
-                <span>{activity.icon}</span>
-                <div>
-                  <p className="font-medium">{activity.title}</p>
-                  <p className="text-sm text-gray-500">{activity.description}</p>
-                  <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
+              <li key={index} className="flex items-start space-x-4 hover:bg-gray-50 rounded-lg p-3 transition-all duration-200">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">{activity.icon}</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900">{activity.title}</p>
+                  <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
+                  <p className="text-xs text-gray-400 mt-2">{activity.time}</p>
                 </div>
               </li>
             ))}

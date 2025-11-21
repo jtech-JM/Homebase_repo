@@ -22,7 +22,7 @@ export default function StudentSupportPage() {
 
   const fetchTickets = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support/tickets/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support-tickets/`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
         },
@@ -41,7 +41,7 @@ export default function StudentSupportPage() {
   const createTicket = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support/tickets/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support-tickets/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ export default function StudentSupportPage() {
     if (!newMessage.trim() || !selectedTicket) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support/tickets/${selectedTicket.id}/messages/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support-tickets/${selectedTicket.id}/messages/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ export default function StudentSupportPage() {
 
   return (
     <DashboardLayout sidebarItems={studentSidebarItems}>
-      <div className="p-6">
+      <div>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold">Support</h1>
           <button

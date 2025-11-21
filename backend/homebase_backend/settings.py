@@ -48,9 +48,12 @@ INSTALLED_APPS = [
     "users",
     "verification",
     "profiles",
-    "rbac",
     "payments",
     "listings",
+    "messaging",
+    "support",
+    "community",
+    "admin_api",
 ]
 
 MIDDLEWARE = [
@@ -69,7 +72,7 @@ ROOT_URLCONF = "homebase_backend.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],  # Add templates directory
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -111,7 +114,9 @@ DJOSER = {
     "USER_CREATE_PASSWORD_RETYPE": True,
     "SEND_ACTIVATION_EMAIL": False,
     "ACTIVATION_URL": "activate/{uid}/{token}",
-    "PASSWORD_RESET_CONFIRM_URL": "password/reset/confirm/{uid}/{token}",
+    "PASSWORD_RESET_CONFIRM_URL": "reset-password?uid={uid}&token={token}",  # Frontend URL
+    "DOMAIN": "localhost:3000",  # Frontend domain
+    "SITE_NAME": "Homebase",
     "SERIALIZERS": {
         "user_create": "users.serializers.UserCreateSerializer",
         "user": "users.serializers.UserSerializer",
@@ -123,21 +128,24 @@ DJOSER = {
         'user_list': ['rest_framework.permissions.IsAdminUser'],
         'token_create': ['rest_framework.permissions.AllowAny'],
         'token_destroy': ['rest_framework.permissions.IsAuthenticated'],
+    },
+    "EMAIL": {
+        "password_reset": "users.email.PasswordResetEmail",
     }
 }
 
 # JWT settings
 from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,
-    'AUTH_HEADER_TYPES': ('JWT',),
+    'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
@@ -242,10 +250,15 @@ SOCIAL_AUTH_FACEBOOK_KEY = os.getenv('SOCIAL_AUTH_FACEBOOK_KEY')
 SOCIAL_AUTH_FACEBOOK_SECRET = os.getenv('SOCIAL_AUTH_FACEBOOK_SECRET')
 
 # Email settings for password recovery and verification
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "gachihijoel234@gmail.com"
-EMAIL_HOST_PASSWORD = "uqenqzwoaanlkpnw"
-DEFAULT_FROM_EMAIL = "gachihijoel234@gmail.com"
+# Using console backend due to SMTP timeout issues
+# Emails will be printed to Django console/terminal
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# For production with working SMTP, use:
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_HOST = "smtp.gmail.com"
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = "gachihijoel234@gmail.com"
+# EMAIL_HOST_PASSWORD = "uqenqzwoaanlkpnw"
+# DEFAULT_FROM_EMAIL = "gachihijoel234@gmail.com"

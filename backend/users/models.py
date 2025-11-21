@@ -22,17 +22,18 @@ class User(AbstractUser):
         ("landlord", "Landlord"),
         ("agent", "Agent"),
         ("admin", "Admin"),
+        ("pending", "Pending"),
     ]
     username = None  # Remove username field
     email = models.EmailField(unique=True)  # Make email the unique identifier
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="pending")
     phone = models.CharField(max_length=20, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['role']
 
     objects = CustomUserManager()
-    
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -40,6 +41,28 @@ class User(AbstractUser):
                 name='unique_email'
             )
         ]
+
+    # Role-based properties for easy permission checking
+    @property
+    def is_student(self):
+        return self.role == 'student'
+
+    @property
+    def is_landlord(self):
+        return self.role == 'landlord'
+
+    @property
+    def is_agent(self):
+        return self.role == 'agent'
+
+    @property
+    def is_admin(self):
+        return self.role == 'admin'
+
+    @property
+    def is_pending(self):
+        return self.role == 'pending'
+
     # Add more shared fields if needed
 
 class Student(models.Model):

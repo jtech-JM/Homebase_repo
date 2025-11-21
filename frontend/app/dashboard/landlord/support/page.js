@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { landlordSidebarItems } from '../page';
 
-export default function SupportPage() {
+export default function LandlordSupportPage() {
   const { data: session } = useSession();
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -22,7 +22,7 @@ export default function SupportPage() {
 
   const fetchTickets = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support/tickets/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support-tickets/`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
         },
@@ -41,7 +41,7 @@ export default function SupportPage() {
   const createTicket = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support/tickets/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support-tickets/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ export default function SupportPage() {
     if (!newMessage.trim() || !selectedTicket) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support/tickets/${selectedTicket.id}/messages/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support-tickets/${selectedTicket.id}/messages/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -5,6 +5,13 @@ import GithubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 const config = {
+  pages: {
+    signIn: '/login',
+    signOut: '/login',
+    error: '/login',
+    verifyRequest: '/verification',
+    newUser: '/select_role',
+  },
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days

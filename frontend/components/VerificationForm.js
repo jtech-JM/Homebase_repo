@@ -29,16 +29,16 @@ export default function VerificationForm() {
     const formData = new FormData();
     formData.append("document", file);
     formData.append("verification_type", type);
-    
+
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/verifications/`,
         {
           method: "POST",
           body: formData,
-       headers: {
-        Authorization: `JWT ${session?.accessToken}`,  
-      },
+          headers: {
+            Authorization: `Bearer ${session?.accessToken}`,
+          },
         }
       );
 

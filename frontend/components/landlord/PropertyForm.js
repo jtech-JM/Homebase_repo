@@ -1,6 +1,7 @@
-"use client";
+ "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 
 const amenitiesList = [
@@ -10,6 +11,7 @@ const amenitiesList = [
 
 export default function PropertyForm({ property = null }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [images, setImages] = useState([]);
@@ -17,11 +19,13 @@ export default function PropertyForm({ property = null }) {
     title: property?.title || "",
     description: property?.description || "",
     address: property?.address || "",
+    location: property?.address || "",
     price: property?.price || "",
     amenities: property?.amenities || [],
-    type: property?.type || "apartment",
+    property_type: property?.property_type || "apartment",
     bedrooms: property?.bedrooms || 1,
     bathrooms: property?.bathrooms || 1,
+    square_feet: property?.square_feet || "",
     available_from: property?.available_from || "",
     lease_term: property?.lease_term || "12",
     status: property?.status || "available"
@@ -67,7 +71,7 @@ export default function PropertyForm({ property = null }) {
       const response = await fetch(url, {
         method: property ? 'PUT' : 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')).state.token : ''}`,
+          'Authorization': `Bearer ${session?.accessToken}`,
         },
         body: formData,
       });
@@ -128,8 +132,8 @@ export default function PropertyForm({ property = null }) {
           <div>
             <label className="block text-sm font-medium mb-1">Property Type</label>
             <select
-              value={form.type}
-              onChange={e => setForm(prev => ({ ...prev, type: e.target.value }))}
+              value={form.property_type}
+              onChange={e => setForm(prev => ({ ...prev, property_type: e.target.value }))}
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
               required
             >
@@ -141,18 +145,33 @@ export default function PropertyForm({ property = null }) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Address</label>
-          <input
-            type="text"
-            value={form.address}
-            onChange={e => setForm(prev => ({ ...prev, address: e.target.value }))}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-            required
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Address</label>
+            <input
+              type="text"
+              value={form.address}
+              onChange={e => setForm(prev => ({ ...prev, address: e.target.value }))}
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter full address (street, city, state, zip)"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Location</label>
+            <input
+              type="text"
+              value={form.location}
+              onChange={e => setForm(prev => ({ ...prev, location: e.target.value }))}
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter location (e.g., Downtown, Near University)"
+              required
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Bedrooms</label>
             <input
@@ -174,6 +193,17 @@ export default function PropertyForm({ property = null }) {
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
               min="0"
               required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Square Feet</label>
+            <input
+              type="number"
+              value={form.square_feet}
+              onChange={e => setForm(prev => ({ ...prev, square_feet: e.target.value }))}
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+              min="0"
             />
           </div>
 

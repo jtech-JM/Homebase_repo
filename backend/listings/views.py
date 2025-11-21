@@ -1,4 +1,6 @@
-from rest_framework import viewsets, permissions, status, filters, serializers
+from rest_framework import viewsets, permissions, status, filters, serializers, parsers
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.parsers import JSONParser
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q, Avg, Sum
@@ -33,6 +35,7 @@ class ListingViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'description', 'address']
     ordering_fields = ['created_at', 'price', 'status']
     ordering = ['-created_at']
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, JSONParser]
 
     def get_queryset(self):
         user = self.request.user
@@ -106,14 +109,147 @@ class ListingViewSet(viewsets.ModelViewSet):
         for booking in bookings:
             data.append({
                 'id': booking.id,
-                'studentImage': getattr(booking.student, 'avatar', None),
-                'studentName': booking.student.get_full_name() or booking.student.email,
-                'propertyName': booking.listing.title,
+                'student': {
+                    'name': booking.student.get_full_name() or booking.student.email,
+                    'email': booking.student.email,
+                    'university': getattr(booking.student, 'university', ''),
+                    'avatar': getattr(booking.student, 'avatar', None),
+                },
+                'listing': {
+                    'title': booking.listing.title,
+                    'address': booking.listing.address,
+                },
                 'status': booking.status,
-                'timeAgo': timesince(booking.created_at),
+                'created_at': booking.created_at,
                 'message': booking.notes,
             })
         return Response(data)
+
+    @action(detail=False, methods=['patch'], url_path='applications/(?P<application_id>\d+)')
+    def update_application(self, request, application_id=None):
+        if not request.user.is_authenticated or request.user.role != 'landlord':
+            return Response(
+                {'error': 'Not authorized'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            booking = Booking.objects.get(
+                id=application_id,
+                listing__landlord=request.user
+            )
+        except Booking.DoesNotExist:
+            return Response(
+                {'error': 'Application not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        action = request.data.get('action')
+        reason = request.data.get('reason', '')
+
+        if action == 'approve':
+            booking.status = 'approved'
+        elif action == 'reject':
+            booking.status = 'rejected'
+            booking.notes = reason
+        else:
+            return Response(
+                {'error': 'Invalid action'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        booking.save()
+        return Response({
+            'id': booking.id,
+            'status': booking.status,
+            'message': 'Application updated successfully'
+        })
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def featured(self, request):
+        """
+        Get featured listings for homepage display
+        """
+        featured_listings = Listing.objects.filter(
+            status='available',
+            featured=True
+        ).order_by('-created_at')[:6]  # Get up to 6 featured listings
+
+        if not featured_listings.exists():
+            # If no featured listings, return recent available listings
+            featured_listings = Listing.objects.filter(
+                status='available'
+            ).order_by('-created_at')[:6]
+
+        serializer = self.get_serializer(featured_listings, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def popular(self, request):
+        """
+        Get popular/trending listings based on booking count
+        """
+        from django.db.models import Count
+
+        popular_listings = Listing.objects.filter(
+            status='available'
+        ).annotate(
+            booking_count=Count('bookings')
+        ).order_by('-booking_count', '-created_at')[:10]  # Top 10 popular listings
+
+        serializer = self.get_serializer(popular_listings, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    def search(self, request):
+        """
+        Search listings with filters
+        """
+        query = request.data.get('query', '')
+        location = request.data.get('location', '')
+        min_price = request.data.get('min_price')
+        max_price = request.data.get('max_price')
+        property_type = request.data.get('property_type')
+        amenities = request.data.get('amenities', [])
+
+        queryset = Listing.objects.filter(status='available')
+
+        # Text search in title, description, address
+        if query:
+            queryset = queryset.filter(
+                Q(title__icontains=query) |
+                Q(description__icontains=query) |
+                Q(address__icontains=query)
+            )
+
+        # Location filter
+        if location:
+            queryset = queryset.filter(
+                Q(address__icontains=location) |
+                Q(city__icontains=location) |
+                Q(state__icontains=location)
+            )
+
+        # Price range filter
+        if min_price:
+            queryset = queryset.filter(price__gte=min_price)
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
+
+        # Property type filter
+        if property_type:
+            queryset = queryset.filter(property_type=property_type)
+
+        # Amenities filter (if amenities field exists)
+        if amenities:
+            for amenity in amenities:
+                queryset = queryset.filter(amenities__icontains=amenity)
+
+        # Order by relevance (newest first for now)
+        queryset = queryset.order_by('-created_at')
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
@@ -124,10 +260,41 @@ class ListingViewSet(viewsets.ModelViewSet):
                 {'error': 'Invalid status'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         listing.status = new_status
         listing.save()
         return Response(ListingSerializer(listing).data)
+
+    @action(detail=False, methods=['get'], url_path='student/applications')
+    def student_applications(self, request):
+        """
+        Get applications for the current student user
+        """
+        if not request.user.is_authenticated or request.user.role != 'student':
+            return Response(
+                {'error': 'Not authorized'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        bookings = Booking.objects.filter(student=request.user).select_related('listing')
+        data = []
+        for booking in bookings:
+            image_url = None
+            if booking.listing.images:
+                image_url = request.build_absolute_uri(booking.listing.images[0])
+
+            data.append({
+                'id': booking.id,
+                'property': {
+                    'title': booking.listing.title,
+                    'address': booking.listing.address,
+                    'image': image_url,
+                    'monthlyRent': str(booking.monthly_rent),
+                },
+                'status': booking.status,
+                'createdAt': booking.created_at.isoformat(),
+            })
+        return Response(data)
 
 
 class BookingViewSet(viewsets.ModelViewSet):
@@ -151,7 +318,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError(
                 'This property is not available for booking'
             )
-        
+
         # Example security deposit calculation
         security_deposit = listing.price * 2
         serializer.save(
@@ -174,7 +341,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         if new_status == 'active':
             booking.listing.status = 'booked'
             booking.listing.save()
-        elif (new_status in ['completed', 'cancelled'] and 
+        elif (new_status in ['completed', 'cancelled'] and
               booking.status == 'active'):
             booking.listing.status = 'available'
             booking.listing.save()
@@ -188,6 +355,7 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
     serializer_class = MaintenanceRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = []
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'priority', 'status']
     ordering = ['-created_at']
@@ -195,10 +363,18 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == 'admin':
-            return MaintenanceRequest.objects.all()
+            queryset = MaintenanceRequest.objects.all()
         elif user.role == 'landlord':
-            return MaintenanceRequest.objects.filter(listing__landlord=user)
-        return MaintenanceRequest.objects.filter(tenant=user)
+            queryset = MaintenanceRequest.objects.filter(listing__landlord=user)
+        else:
+            queryset = MaintenanceRequest.objects.filter(tenant=user)
+
+        # Handle 'all' status filter
+        status = self.request.query_params.get('status')
+        if status and status != 'all':
+            queryset = queryset.filter(status=status)
+
+        return queryset
 
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
@@ -212,7 +388,7 @@ class MaintenanceRequestViewSet(viewsets.ModelViewSet):
 
         if new_status == 'completed':
             maintenance_request.completed_date = timezone.now()
-        
+
         maintenance_request.status = new_status
         maintenance_request.save()
         return Response(MaintenanceRequestSerializer(maintenance_request).data)
