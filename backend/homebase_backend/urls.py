@@ -6,6 +6,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("users.urls")),
     path("api/", include("verification.urls")),
+    path("api/verification/", include("verification.enhanced_urls")),
+    path("api/verification/", include("users.verification_urls")),  # Verification status endpoints
+    path("api/verification/renewal/", include("verification.renewal_urls")),  # Renewal endpoints
+    path("api/verification/admin/", include("verification.admin_urls")),  # Admin review endpoints
     path("api/auth/", include("djoser.urls")),
     path("api/auth/", include("djoser.urls.jwt")),
     path("api/social-auth/", include("social_django.urls", namespace="social")),

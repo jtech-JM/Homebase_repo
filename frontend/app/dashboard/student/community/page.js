@@ -6,6 +6,13 @@ import RoleProtectedLayout from '@/components/auth/RoleProtectedLayout';
 import UserAvatar from '@/components/UserAvatar';
 import { studentSidebarItems } from '../page';
 import { Users, MessageSquare, Heart, Plus, Filter, TrendingUp, Calendar, MapPin, Star, ThumbsUp, Send, AlertTriangle, Trash2, Edit2, X } from 'lucide-react';
+import { 
+  VerificationGate, 
+  VerificationBadge,
+  VerificationPrompt,
+  FeatureLock,
+  ExpirationWarning
+} from '@/components/verification';
 
 export default function StudentCommunityPage() {
   const { data: session } = useSession();
@@ -18,6 +25,7 @@ export default function StudentCommunityPage() {
   const [editingPost, setEditingPost] = useState(null);
   const [showComments, setShowComments] = useState({});
   const [newComment, setNewComment] = useState({});
+  const [verificationScore, setVerificationScore] = useState(0);
 
   const categories = [
     { id: 'all', name: 'All Posts', icon: <MessageSquare className="w-4 h-4" />, color: 'text-gray-600' },
@@ -35,6 +43,18 @@ export default function StudentCommunityPage() {
 
   const fetchPosts = async () => {
     try {
+      // Fetch verification status
+      const verificationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verification/my-status/`, {
+        headers: {
+          'Authorization': `Bearer ${session.accessToken}`,
+        },
+      });
+      if (verificationResponse.ok) {
+        const verificationData = await verificationResponse.json();
+        setVerificationScore(verificationData.score || 0);
+      }
+
+      // Fetch posts
       const categoryParam = selectedCategory !== 'all' ? `?category=${selectedCategory}` : '';
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/community/posts/${categoryParam}`, {
         headers: {
@@ -185,10 +205,18 @@ export default function StudentCommunityPage() {
   return (
     <RoleProtectedLayout allowedRoles={['student']}>
       <DashboardLayout sidebarItems={studentSidebarItems}>
+      {/* Expiration Warning */}
+      <div className="mb-6">
+        <ExpirationWarning />
+      </div>
+
       {/* Page Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Student Community</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900">Student Community</h1>
+            <VerificationBadge score={verificationScore} size="md" />
+          </div>
           <p className="text-gray-600 mt-1">Connect with fellow students, share experiences, and find roommates</p>
         </div>
         <div className="flex items-center gap-4">
@@ -198,6 +226,18 @@ export default function StudentCommunityPage() {
           </div>
         </div>
       </div>
+
+      {/* Verification Prompt for Community Access */}
+      {verificationScore < 30 && (
+        <div className="mb-6">
+          <VerificationPrompt
+            title="Unlock Community Features"
+            message="Complete your verification to participate in the student community and connect with peers."
+            requiredScore={30}
+            currentScore={verificationScore}
+          />
+        </div>
+      )}
 
       {/* Alerts */}
       {error && (
@@ -266,47 +306,64 @@ export default function StudentCommunityPage() {
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
           {/* Create Post Card */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <Plus className="w-5 h-5 text-blue-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Share Something</h2>
+          <VerificationGate
+            requiredScore={30}
+            feature="community_posting"
+            fallback={
+              <FeatureLock
+                feature="Community Posting"
+                requiredScore={30}
+                currentScore={verificationScore}
+                benefits={[
+                  "Post in the community",
+                  "Connect with other students",
+                  "Find roommates and study groups"
+                ]}
+              />
+            }
+          >
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <Plus className="w-5 h-5 text-blue-600" />
+                  <h2 className="text-lg font-semibold text-gray-900">Share Something</h2>
+                </div>
               </div>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <textarea
-                  value={newPost}
-                  onChange={(e) => setNewPost(e.target.value)}
-                  placeholder="What's on your mind? Ask for roommates, share advice, or discuss student life..."
-                  className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-28 text-gray-900 placeholder-gray-500"
-                />
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              <div className="p-6">
+                <div className="space-y-4">
+                  <textarea
+                    value={newPost}
+                    onChange={(e) => setNewPost(e.target.value)}
+                    placeholder="What's on your mind? Ask for roommates, share advice, or discuss student life..."
+                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-28 text-gray-900 placeholder-gray-500"
+                  />
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      >
+                        {categories.filter(cat => cat.id !== 'all').map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={createPost}
+                      disabled={!newPost.trim()}
+                      className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
                     >
-                      {categories.filter(cat => cat.id !== 'all').map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                      <Send className="w-4 h-4" />
+                      Post
+                    </button>
                   </div>
-                  <button
-                    onClick={createPost}
-                    disabled={!newPost.trim()}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
-                  >
-                    <Send className="w-4 h-4" />
-                    Post
-                  </button>
                 </div>
               </div>
             </div>
-          </div>
+          </VerificationGate>
 
           {/* Posts Feed */}
           <div className="space-y-4">

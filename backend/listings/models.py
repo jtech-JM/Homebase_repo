@@ -44,6 +44,29 @@ class Listing(models.Model):
 
     def __str__(self):
         return self.title
+    
+    @property
+    def is_student_housing(self):
+        """Check if this is student housing."""
+        title_lower = self.title.lower() if self.title else ''
+        desc_lower = self.description.lower() if self.description else ''
+        return 'student' in title_lower or 'university' in desc_lower
+    
+    def get_verification_required_score(self):
+        """Get minimum verification score required for this listing."""
+        if self.is_student_housing:
+            return 70  # Verified students only
+        return 0  # No verification required for regular listings
+    
+    @property
+    def price_per_night(self):
+        """Alias for price field for compatibility."""
+        return self.price
+    
+    @property
+    def location(self):
+        """Alias for address field for compatibility."""
+        return self.address
 
     class Meta:
         ordering = ['-created_at']

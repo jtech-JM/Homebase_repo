@@ -20,6 +20,7 @@ from .serializers import (
 )
 from .permissions import IsAdminUser
 from .utils import log_admin_action, get_client_ip
+from users.permissions import IsAgent
 
 User = get_user_model()
 
@@ -218,6 +219,12 @@ class UserManagementViewSet(viewsets.ModelViewSet):
         
         return queryset
     
+    def get_serializer_context(self):
+        """Pass request context to serializer for absolute URLs"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+    
     @action(detail=True, methods=['post'])
     def update_role(self, request, pk=None):
         """Update user role"""
@@ -244,7 +251,7 @@ class UserManagementViewSet(viewsets.ModelViewSet):
             ip_address=get_client_ip(request)
         )
         
-        return Response(UserManagementSerializer(user).data)
+        return Response(UserManagementSerializer(user, context={'request': request}).data)
     
     @action(detail=True, methods=['post'])
     def toggle_status(self, request, pk=None):
@@ -265,7 +272,7 @@ class UserManagementViewSet(viewsets.ModelViewSet):
             ip_address=get_client_ip(request)
         )
         
-        return Response(UserManagementSerializer(user).data)
+        return Response(UserManagementSerializer(user, context={'request': request}).data)
 
 
 @api_view(['GET'])
@@ -826,3 +833,286 @@ def platform_settings(request):
             
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Agent Dashboard Views
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAgent])
+def agent_dashboard_overview(request):
+    """Get agent dashboard overview statistics"""
+    try:
+        from listings.models import Listing
+        from django.apps import apps
+        
+        # Get agent profile
+        agent = request.user.agent
+        
+        # Calculate statistics
+        students_assisted = 0  # This would come from support tickets or interactions
+        landlords_onboarded = User.objects.filter(role='landlord', is_active=True).count()
+        properties_verified = Listing.objects.filter(verified=True).count()
+        active_disputes = 0  # This would come from dispute/support system
+        
+        stats = {
+            'studentsAssisted': students_assisted,
+            'landlordsOnboarded': landlords_onboarded,
+            'propertiesVerified': properties_verified,
+            'activeDisputes': active_disputes
+        }
+        
+        # Mock tasks for now
+        tasks = [
+            {
+                'title': 'Verify Property Documents',
+                'description': 'Review and verify 3 pending property submissions',
+                'actionLabel': 'Review Now',
+                'icon': '📋'
+            },
+            {
+                'title': 'Student Support Request',
+                'description': 'Respond to urgent support ticket from John Doe',
+                'actionLabel': 'Respond',
+                'icon': '🎓'
+            }
+        ]
+        
+        # Mock pending verifications
+        pending_verifications = [
+            {
+                'type': 'Property Verification',
+                'details': 'Modern Studio Apartment - Boston',
+                'time': '2 hours ago'
+            },
+            {
+                'type': 'Landlord Verification',
+                'details': 'Sarah Wilson - Document Review',
+                'time': '4 hours ago'
+            }
+        ]
+        
+        return Response({
+            'stats': stats,
+            'tasks': tasks,
+            'pendingVerifications': pending_verifications
+        })
+    
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAgent])
+def agent_applications_list(request):
+    """Get list of applications for agent review"""
+    try:
+        from django.apps import apps
+        
+        try:
+            Application = apps.get_model('listings', 'Application')
+        except LookupError:
+            return Response({'applications': []})
+        
+        applications = Application.objects.all().select_related(
+            'student', 'listing', 'listing__landlord'
+        ).order_by('-created_at')
+        
+        applications_data = []
+        for app in applications:
+            applications_data.append({
+                'id': app.id,
+                'applicant_name': f"{app.student.first_name} {app.student.last_name}".strip() or app.student.email.split('@')[0],
+                'applicant_email': app.student.email,
+                'property_title': app.listing.title,
+                'property_address': app.listing.address,
+                'status': app.status,
+                'created_at': app.created_at.isoformat()
+            })
+        
+        return Response({'applications': applications_data})
+    
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated, IsAgent])
+def agent_application_update(request, application_id):
+    """Update application status"""
+    try:
+        from django.apps import apps
+        
+        Application = apps.get_model('listings', 'Application')
+        application = Application.objects.get(id=application_id)
+        
+        new_status = request.data.get('status')
+        if new_status in ['approved', 'rejected', 'under_review']:
+            application.status = new_status
+            application.save()
+            
+            return Response({'message': 'Application updated successfully'})
+        else:
+            return Response(
+                {'error': 'Invalid status'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAgent])
+def agent_tasks_list(request):
+    """Get list of tasks for agent"""
+    try:
+        # Mock tasks data - in a real implementation, this would come from a Task model
+        tasks = [
+            {
+                'id': 1,
+                'title': 'Review Property Verification',
+                'description': 'Verify documents for Modern Studio Apartment',
+                'status': 'pending',
+                'priority': 'high',
+                'due_date': '2024-01-25',
+                'assigned_by': 'System',
+                'task_type': 'Verification'
+            },
+            {
+                'id': 2,
+                'title': 'Student Support Follow-up',
+                'description': 'Follow up with John Doe regarding booking issue',
+                'status': 'in_progress',
+                'priority': 'medium',
+                'due_date': '2024-01-24',
+                'assigned_by': 'Admin',
+                'task_type': 'Support'
+            },
+            {
+                'id': 3,
+                'title': 'Landlord Onboarding',
+                'description': 'Complete onboarding process for new landlord',
+                'status': 'completed',
+                'priority': 'low',
+                'due_date': '2024-01-22',
+                'assigned_by': 'System',
+                'task_type': 'Onboarding'
+            }
+        ]
+        
+        return Response({'tasks': tasks})
+    
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated, IsAgent])
+def agent_task_update(request, task_id):
+    """Update task status"""
+    try:
+        # Mock implementation - in real app, this would update a Task model
+        new_status = request.data.get('status')
+        
+        if new_status in ['pending', 'in_progress', 'completed', 'cancelled']:
+            return Response({'message': 'Task updated successfully'})
+        else:
+            return Response(
+                {'error': 'Invalid status'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAgent])
+def agent_reports_data(request):
+    """Get reports and analytics data for agent"""
+    try:
+        days = int(request.query_params.get('days', 30))
+        
+        # Mock metrics data
+        metrics = {
+            'studentsHelped': 25,
+            'verificationsCompleted': 12,
+            'applicationsProcessed': 18,
+            'averageRating': '4.8',
+            'avgResponseTime': '2.5 hours',
+            'fastestResponse': '15 minutes',
+            'resolutionRate': '94%',
+            'tasksCompleted': 47,
+            'onTimeCompletion': '89%',
+            'overdueTasks': 2
+        }
+        
+        # Mock activities
+        activities = [
+            {
+                'title': 'Verified Property Documents',
+                'description': 'Completed verification for Modern Studio Apartment',
+                'icon': '✅',
+                'timestamp': '2024-01-21T10:30:00Z'
+            },
+            {
+                'title': 'Responded to Support Ticket',
+                'description': 'Helped student with booking issue',
+                'icon': '🎓',
+                'timestamp': '2024-01-21T09:15:00Z'
+            }
+        ]
+        
+        return Response({
+            'metrics': metrics,
+            'activities': activities
+        })
+    
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAgent])
+def agent_reports_export(request):
+    """Export agent reports"""
+    try:
+        format_type = request.query_params.get('format', 'pdf')
+        days = request.query_params.get('days', '30')
+        
+        # Mock implementation - in real app, this would generate actual reports
+        from django.http import HttpResponse
+        
+        if format_type == 'pdf':
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="agent-report-{days}days.pdf"'
+            response.write(b'Mock PDF content')
+        else:
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="agent-report-{days}days.csv"'
+            response.write('Date,Activity,Status\n2024-01-21,Property Verified,Completed\n')
+        
+        return response
+    
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

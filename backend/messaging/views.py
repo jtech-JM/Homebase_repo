@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers as drf_serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -7,6 +7,8 @@ from django.db.models import Q, Max
 from django.shortcuts import get_object_or_404
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
+from verification.access_control import access_control_engine
+from listings.models import Listing
 
 class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
@@ -16,6 +18,32 @@ class ConversationViewSet(viewsets.ModelViewSet):
         return Conversation.objects.filter(participants=self.request.user)
 
     def perform_create(self, serializer):
+        # Check if this is a conversation about a listing (student contacting landlord)
+        listing_id = self.request.data.get('listing')
+        
+        if listing_id:
+            try:
+                listing = Listing.objects.get(id=listing_id)
+                
+                # If student is contacting landlord about student housing, require verification
+                if self.request.user.role == 'student' and listing.is_student_housing:
+                    decision = access_control_engine.evaluate_access(
+                        self.request.user,
+                        'contact_landlord',
+                        required_score=31  # Basic verification required
+                    )
+                    
+                    if not decision.granted:
+                        raise drf_serializers.ValidationError({
+                            'verification_required': True,
+                            'message': 'Basic verification required to contact landlords about student housing',
+                            'required_score': 31,
+                            'current_score': decision.verification_score,
+                            'reason': decision.blocking_reason
+                        })
+            except Listing.DoesNotExist:
+                pass
+        
         conversation = serializer.save()
         conversation.participants.add(self.request.user)
 
@@ -68,6 +96,23 @@ class SendMessageView(APIView):
 
     def post(self, request, conversation_id):
         conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+        
+        # Check verification if this is about a student housing listing
+        if conversation.listing and conversation.listing.is_student_housing:
+            if request.user.role == 'student':
+                decision = access_control_engine.evaluate_access(
+                    request.user,
+                    'message_landlord',
+                    required_score=31
+                )
+                
+                if not decision.granted:
+                    return Response({
+                        'verification_required': True,
+                        'message': 'Basic verification required to message about student housing',
+                        'required_score': 31,
+                        'current_score': decision.verification_score
+                    }, status=status.HTTP_403_FORBIDDEN)
 
         serializer = MessageSerializer(data=request.data)
         if serializer.is_valid():

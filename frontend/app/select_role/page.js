@@ -32,16 +32,17 @@ export default function SelectRole() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `JWT ${session.accessToken}`,
+          "Authorization": `Bearer ${session.accessToken}`,
         },
         body: JSON.stringify({ role }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        // Update session with new role
-        await update({ role: data.role });
-        router.push(data.redirect_url || "/dashboard");
+        // Trigger session update to fetch fresh user data from backend
+        await update();
+        // Redirect to role-specific dashboard
+        router.push(data.redirect_url);
       } else {
         const data = await res.json();
         setError(data.error || "Failed to update role");
@@ -56,7 +57,17 @@ export default function SelectRole() {
   if (status === "loading") return <div>Loading...</div>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 relative">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-700 font-medium">Updating your role...</p>
+          </div>
+        </div>
+      )}
+
       <form className="bg-white p-8 rounded shadow-md w-full max-w-md" onSubmit={handleSubmit}>
         <h2 className="text-xl font-bold mb-4">Select Your Role</h2>
         {error && (
@@ -71,6 +82,7 @@ export default function SelectRole() {
             onChange={(e) => setRole(e.target.value)}
             className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
+            disabled={loading}
           >
             <option value="student">Student</option>
             <option value="landlord">Landlord</option>
@@ -79,7 +91,7 @@ export default function SelectRole() {
         </div>
         <button
           type="submit"
-          className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors duration-200"
+          className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           {loading ? "Updating..." : "Continue"}

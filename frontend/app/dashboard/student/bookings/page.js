@@ -5,12 +5,20 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { studentSidebarItems } from '../page';
 import Link from 'next/link';
 import { Calendar, MapPin, DollarSign, Clock, Home, Loader2 } from 'lucide-react';
+import { 
+  VerificationGate, 
+  VerificationBadge,
+  VerificationPrompt,
+  FeatureLock,
+  ExpirationWarning
+} from '@/components/verification';
 
 export default function StudentBookings() {
   const { data: session } = useSession();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [verificationScore, setVerificationScore] = useState(0);
 
   useEffect(() => {
     if (session) {
@@ -20,6 +28,18 @@ export default function StudentBookings() {
 
   const fetchBookings = async () => {
     try {
+      // Fetch verification status
+      const verificationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verification/my-status/`, {
+        headers: {
+          'Authorization': `Bearer ${session.accessToken}`,
+        },
+      });
+      if (verificationResponse.ok) {
+        const verificationData = await verificationResponse.json();
+        setVerificationScore(verificationData.score || 0);
+      }
+
+      // Fetch bookings
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
@@ -49,11 +69,28 @@ export default function StudentBookings() {
   return (
     <DashboardLayout sidebarItems={studentSidebarItems}>
       <div>
+        {/* Expiration Warning */}
+        <div className="mb-6">
+          <ExpirationWarning />
+        </div>
+
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Bookings</h1>
           <p className="text-gray-600">Manage your accommodation bookings</p>
         </div>
+
+        {/* Verification Prompt for Low Score */}
+        {verificationScore < 30 && (
+          <div className="mb-6">
+            <VerificationPrompt
+              title="Unlock Premium Booking Features"
+              message="Complete your verification to access premium properties and priority booking."
+              requiredScore={30}
+              currentScore={verificationScore}
+            />
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
@@ -111,7 +148,12 @@ export default function StudentBookings() {
                     <div className="flex-1">
                       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
                         <div>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-1">{booking.listing.title}</h2>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h2 className="text-xl font-semibold text-gray-900">{booking.listing.title}</h2>
+                            {booking.verificationRequired && (
+                              <VerificationBadge score={verificationScore} size="sm" showLabel={false} />
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-gray-600">
                             <MapPin className="w-4 h-4" />
                             <p className="text-sm">{booking.listing.address}</p>

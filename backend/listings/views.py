@@ -12,6 +12,7 @@ from .serializers import (
     ListingSerializer, BookingSerializer, MaintenanceRequestSerializer,
     PropertyDocumentSerializer
 )
+from .access_control_views import ListingAccessControlMixin
 
 
 class IsLandlordOrReadOnly(permissions.BasePermission):
@@ -28,7 +29,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         return obj.uploaded_by == request.user
 
 
-class ListingViewSet(viewsets.ModelViewSet):
+class ListingViewSet(ListingAccessControlMixin, viewsets.ModelViewSet):
     serializer_class = ListingSerializer
     permission_classes = [IsLandlordOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -225,9 +226,8 @@ class ListingViewSet(viewsets.ModelViewSet):
         # Location filter
         if location:
             queryset = queryset.filter(
-                Q(address__icontains=location) |
-                Q(city__icontains=location) |
-                Q(state__icontains=location)
+                Q(address__icontains=location) 
+
             )
 
         # Price range filter
@@ -313,11 +313,31 @@ class BookingViewSet(viewsets.ModelViewSet):
         return Booking.objects.filter(student=user)
 
     def perform_create(self, serializer):
+        from verification.access_control import access_control_engine
+        
         listing = Listing.objects.get(pk=self.request.data['listing'])
         if listing.status != 'available':
             raise serializers.ValidationError(
                 'This property is not available for booking'
             )
+
+        # Check verification requirement for student housing
+        required_score = listing.get_verification_required_score()
+        if required_score > 0:
+            decision = access_control_engine.evaluate_access(
+                self.request.user,
+                'booking_student_housing',
+                required_score=required_score
+            )
+            
+            if not decision.granted:
+                raise serializers.ValidationError({
+                    'verification_required': True,
+                    'message': 'Insufficient verification for student housing',
+                    'required_score': required_score,
+                    'current_score': decision.verification_score,
+                    'reason': decision.blocking_reason
+                })
 
         # Example security deposit calculation
         security_deposit = listing.price * 2

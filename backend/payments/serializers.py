@@ -1,25 +1,31 @@
+"""Serializers for payment models."""
+
 from rest_framework import serializers
 from .models import Payment, Escrow
 
-class PaymentSerializer(serializers.ModelSerializer):
-    payer_name = serializers.CharField(source='payer.get_full_name', read_only=True)
-    payee_name = serializers.CharField(source='payee.get_full_name', read_only=True)
-    listing_title = serializers.CharField(source='listing.title', read_only=True)
-    booking_id = serializers.IntegerField(source='booking.id', read_only=True)
 
+class PaymentSerializer(serializers.ModelSerializer):
+    """Serializer for Payment model."""
+    
+    payer_email = serializers.EmailField(source='payer.email', read_only=True)
+    payee_email = serializers.EmailField(source='payee.email', read_only=True)
+    
     class Meta:
         model = Payment
         fields = [
-            'id', 'payer', 'payer_name', 'payee', 'payee_name', 'amount', 'status',
-            'payment_type', 'created_at', 'updated_at', 'reference', 'listing',
-            'listing_title', 'booking', 'booking_id', 'due_date', 'paid_at',
+            'id', 'payer', 'payer_email', 'payee', 'payee_email',
+            'amount', 'status', 'payment_type', 'created_at', 'updated_at',
+            'reference', 'listing', 'booking', 'due_date', 'paid_at',
             'payment_method', 'gateway_transaction_id'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'paid_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'payer']
+
 
 class EscrowSerializer(serializers.ModelSerializer):
+    """Serializer for Escrow model."""
+    
     payment_details = PaymentSerializer(source='payment', read_only=True)
-
+    
     class Meta:
         model = Escrow
         fields = ['id', 'payment', 'payment_details', 'released', 'released_at']

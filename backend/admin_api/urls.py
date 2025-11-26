@@ -29,6 +29,15 @@ urlpatterns = [
     # Settings
     path('settings/', views.platform_settings, name='admin-settings'),
     
+    # Agent Dashboard URLs
+    path('agent/dashboard/', views.agent_dashboard_overview, name='agent-dashboard'),
+    path('agent/applications/', views.agent_applications_list, name='agent-applications'),
+    path('agent/applications/<int:application_id>/', views.agent_application_update, name='agent-application-update'),
+    path('agent/tasks/', views.agent_tasks_list, name='agent-tasks'),
+    path('agent/tasks/<int:task_id>/', views.agent_task_update, name='agent-task-update'),
+    path('agent/reports/', views.agent_reports_data, name='agent-reports'),
+    path('agent/reports/export/', views.agent_reports_export, name='agent-reports-export'),
+    
     # Router URLs (users and support tickets)
     path('', include(router.urls)),
 ]

@@ -24,10 +24,30 @@ class User(AbstractUser):
         ("admin", "Admin"),
         ("pending", "Pending"),
     ]
+    
+    VERIFICATION_LEVEL_CHOICES = [
+        ('unverified', 'Unverified'),
+        ('basic', 'Basic'),
+        ('verified', 'Verified'),
+    ]
+    
     username = None  # Remove username field
     email = models.EmailField(unique=True)  # Make email the unique identifier
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="pending")
     phone = models.CharField(max_length=20, blank=True)
+    
+    # Verification enforcement fields
+    verification_level = models.CharField(
+        max_length=20, 
+        choices=VERIFICATION_LEVEL_CHOICES, 
+        default='unverified',
+        db_index=True
+    )
+    access_permissions_cache = models.JSONField(
+        default=dict,
+        help_text="Cached access permissions for performance optimization"
+    )
+    last_verification_check = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['role']

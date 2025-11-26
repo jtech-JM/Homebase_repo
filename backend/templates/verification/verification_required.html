@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Required - Homebase</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .status-unverified {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .status-basic {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-verified {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .score-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #2563eb;
+            margin: 20px 0;
+        }
+        .benefits-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .benefit-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9fafb;
+            border-left: 4px solid #2563eb;
+            border-radius: 4px;
+        }
+        .benefit-item h3 {
+            margin: 0 0 5px 0;
+            color: #1f2937;
+        }
+        .benefit-item p {
+            margin: 0;
+            color: #6b7280;
+        }
+        .cta-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: background-color 0.2s;
+        }
+        .cta-button:hover {
+            background-color: #1d4ed8;
+        }
+        .secondary-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #e5e7eb;
+            color: #374151;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-left: 10px;
+            transition: background-color 0.2s;
+        }
+        .secondary-button:hover {
+            background-color: #d1d5db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Verification Required</h1>
+        
+        <div class="status-badge status-{{ verification_level }}">
+            {{ verification_level|title }} - {{ verification_score }}%
+        </div>
+        
+        <p>This feature requires student verification to access. Complete your verification to unlock exclusive student benefits!</p>
+        
+        <div class="score-display">{{ verification_score }}%</div>
+        <p style="color: #6b7280;">Current Verification Score</p>
+        
+        <h2>🎯 Benefits of Verification</h2>
+        <ul class="benefits-list">
+            {% for benefit in benefits %}
+            <li class="benefit-item">
+                <h3>{{ benefit.name }}</h3>
+                <p>{{ benefit.description }}</p>
+                <small style="color: #9ca3af;">Requires: {{ benefit.get_verification_level_required_display }}</small>
+            </li>
+            {% endfor %}
+        </ul>
+        
+        <div style="margin-top: 30px;">
+            <a href="/verify-student/" class="cta-button">Complete Verification →</a>
+            <a href="{{ redirect_url }}" class="secondary-button">Go Back</a>
+        </div>
+    </div>
+</body>
+</html>

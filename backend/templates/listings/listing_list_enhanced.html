@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Housing Listings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .verification-banner {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .verification-banner.verified {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .search-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .search-bar input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .listings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .listing-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        
+        .listing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        
+        .listing-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+        }
+        
+        .access-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-premium {
+            background: #10b981;
+            color: white;
+        }
+        
+        .badge-standard {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .badge-view-only {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .badge-locked {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .listing-content {
+            padding: 20px;
+        }
+        
+        .listing-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1f2937;
+        }
+        
+        .listing-location {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .listing-description {
+            color: #4b5563;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .pricing-section {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        
+        .price-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .base-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .base-price.discounted {
+            text-decoration: line-through;
+            color: #9ca3af;
+            font-size: 18px;
+        }
+        
+        .final-price {
+            font-size: 28px;
+            font-weight: 700;
+            color: #10b981;
+        }
+        
+        .discount-badge {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .listing-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .btn-disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .verification-prompt {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #92400e;
+        }
+        
+        .verification-prompt a {
+            color: #b45309;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .page-link {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #374151;
+            transition: all 0.3s;
+        }
+        
+        .page-link:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .page-link.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏠 Student Housing Listings</h1>
+        <p>Find your perfect student accommodation</p>
+    </div>
+    
+    <div class="container">
+        <!-- Verification Status Banner -->
+        {% if user.is_authenticated %}
+            {% if user_permissions.can_access_student_discounts %}
+                <div class="verification-banner verified">
+                    <h3>✓ Verified Student</h3>
+                    <p>You're unlocking {{ user_permissions.verification_score }}% verification benefits including student discounts!</p>
+                </div>
+            {% else %}
+                <div class="verification-banner">
+                    <h3>🎓 Unlock Student Benefits</h3>
+                    <p>Complete verification to access student discounts (15-20% off) and exclusive housing!</p>
+                    <a href="/verification/start/" style="color: white; text-decoration: underline; font-weight: 600;">Start Verification →</a>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="verification-banner">
+                <h3>Welcome! 👋</h3>
+                <p>Login and verify your student status to unlock exclusive discounts and housing options</p>
+                <a href="/login/" style="color: white; text-decoration: underline; font-weight: 600;">Login / Sign Up →</a>
+            </div>
+        {% endif %}
+        
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <form method="get">
+                <input type="text" name="search" placeholder="Search by location, title, or description..." value="{{ search_query }}">
+                <div class="filters">
+                    <button type="submit" name="student_only" value="true" class="filter-btn {% if student_only %}active{% endif %}">
+                        🎓 Student Housing Only
+                    </button>
+                    <button type="submit" class="filter-btn">
+                        🔍 All Listings
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Listings Grid -->
+        <div class="listings-grid">
+            {% for item in listings_with_access %}
+                <div class="listing-card">
+                    <!-- Access Badge -->
+                    <span class="access-badge badge-{{ item.access.access_level }}">
+                        {% if item.access.access_level == 'premium' %}
+                            ⭐ Full Access
+                        {% elif item.access.access_level == 'standard' %}
+                            ✓ Standard
+                        {% elif item.access.access_level == 'view_only' %}
+                            👁️ View Only
+                        {% else %}
+                            🔒 Limited
+                        {% endif %}
+                    </span>
+                    
+                    <!-- Listing Image Placeholder -->
+                    <div class="listing-image">
+                        🏠
+                    </div>
+                    
+                    <!-- Listing Content -->
+                    <div class="listing-content">
+                        <h3 class="listing-title">{{ item.listing.title }}</h3>
+                        <p class="listing-location">📍 {{ item.listing.location }}</p>
+                        
+                        {% if item.access.can_view_details %}
+                            <p class="listing-description">
+                                {{ item.listing.description|truncatewords:20 }}
+                            </p>
+                        {% else %}
+                            <p class="listing-description" style="color: #9ca3af;">
+                                Login to view full details
+                            </p>
+                        {% endif %}
+                        
+                        <!-- Pricing Section -->
+                        <div class="pricing-section">
+                            <div class="price-display">
+                                {% if item.pricing.student_discount_applied %}
+                                    <span class="base-price discounted">${{ item.pricing.base_price }}</span>
+                                    <span class="final-price">${{ item.pricing.final_price }}</span>
+                                    <span class="discount-badge">-{{ item.pricing.discount_percentage }}%</span>
+                                {% else %}
+                                    <span class="base-price">${{ item.pricing.base_price }}</span>
+                                    <span style="font-size: 14px; color: #6b7280;">per night</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if item.pricing.student_discount_applied %}
+                                <p style="font-size: 12px; color: #10b981; font-weight: 600;">
+                                    💰 You save ${{ item.pricing.discount_amount }}!
+                                </p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="listing-actions">
+                            <a href="/listings/{{ item.listing.id }}/" class="btn btn-primary">
+                                View Details
+                            </a>
+                            {% if item.access.can_book %}
+                                <a href="/listings/bookings/create/{{ item.listing.id }}/" class="btn btn-secondary">
+                                    Book Now
+                                </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Verification Prompt -->
+                        {% if not item.access.can_book and item.access.blocking_reason %}
+                            <div class="verification-prompt">
+                                🔒 {{ item.access.blocking_reason }}
+                                <a href="/verification/start/">Complete Verification</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
+                    <h2 style="color: #6b7280;">No listings found</h2>
+                    <p style="color: #9ca3af;">Try adjusting your search criteria</p>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="page-link">← Previous</a>
+                {% endif %}
+                
+                <span class="page-link active">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="page-link">Next →</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

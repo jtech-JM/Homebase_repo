@@ -6,6 +6,13 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { studentSidebarItems } from '../page';
 import Link from 'next/link';
 import { Search as SearchIcon, Filter, MapPin, Home, DollarSign, Loader2 } from 'lucide-react';
+import { 
+  VerificationGate, 
+  VerificationBadge,
+  VerificationPrompt,
+  FeatureLock,
+  ExpirationWarning
+} from '@/components/verification';
 
 // Custom debounce hook
 function useDebounce(value, delay) {
@@ -24,6 +31,60 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
+// Property Card Component
+function PropertyCard({ property, verificationScore }) {
+  const hasDiscount = verificationScore >= 70;
+  const discountedPrice = hasDiscount ? property.price * 0.9 : property.price;
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-all duration-300 group">
+      <div className="relative h-48 overflow-hidden">
+        <img
+          src={property.images?.[0] || "/placeholder.png"}
+          alt={property.title}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+        />
+        <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+          <div className="bg-white px-3 py-1 rounded-full text-sm font-semibold text-blue-600 shadow-md">
+            {hasDiscount && (
+              <span className="line-through text-gray-400 mr-2">
+                KSh {property.price?.toLocaleString()}
+              </span>
+            )}
+            KSh {discountedPrice?.toLocaleString()}
+          </div>
+          {hasDiscount && (
+            <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-md">
+              10% Student Discount
+            </div>
+          )}
+        </div>
+        {property.isPremium && (
+          <div className="absolute top-3 left-3">
+            <VerificationBadge score={verificationScore} size="sm" />
+          </div>
+        )}
+      </div>
+      <div className="p-6">
+        <h3 className="font-semibold text-lg mb-2 text-gray-900 line-clamp-1">{property.title}</h3>
+        <div className="flex items-center gap-2 text-gray-600 mb-4">
+          <MapPin className="w-4 h-4 flex-shrink-0" />
+          <p className="text-sm line-clamp-1">{property.address}</p>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-500">/month</span>
+          <Link
+            href={`/dashboard/student/listing/${property.id}`}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md"
+          >
+            View Details
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function StudentSearch() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
@@ -38,12 +99,25 @@ export default function StudentSearch() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [verificationScore, setVerificationScore] = useState(0);
   
   // Debounce search query
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   const fetchProperties = async () => {
     try {
+      // Fetch verification status
+      const verificationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verification/my-status/`, {
+        headers: {
+          'Authorization': `Bearer ${session.accessToken}`,
+        },
+      });
+      if (verificationResponse.ok) {
+        const verificationData = await verificationResponse.json();
+        setVerificationScore(verificationData.score || 0);
+      }
+
+      // Fetch properties
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/listings/search/`, {
         method: 'POST',
         headers: {
@@ -81,11 +155,28 @@ export default function StudentSearch() {
   return (
     <DashboardLayout sidebarItems={studentSidebarItems}>
       <div>
+        {/* Expiration Warning */}
+        <div className="mb-6">
+          <ExpirationWarning />
+        </div>
+
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Search Properties</h1>
           <p className="text-gray-600">Find your perfect student accommodation</p>
         </div>
+
+        {/* Verification Status Banner */}
+        {verificationScore < 70 && (
+          <div className="mb-6">
+            <VerificationPrompt
+              title="Unlock Student Discounts"
+              message="Complete your verification to access exclusive student rates and premium properties."
+              requiredScore={70}
+              currentScore={verificationScore}
+            />
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="mb-6 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
@@ -241,36 +332,37 @@ export default function StudentSearch() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {properties.map((property) => (
-              <div key={property.id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-all duration-300 group">
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={property.images?.[0] || "/placeholder.png"}
-                    alt={property.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-semibold text-blue-600 shadow-md">
-                    KSh {property.price?.toLocaleString() || property.price}
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="font-semibold text-lg mb-2 text-gray-900 line-clamp-1">{property.title}</h3>
-                  <div className="flex items-center gap-2 text-gray-600 mb-4">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                    <p className="text-sm line-clamp-1">{property.address}</p>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">/month</span>
-                    <Link
-                      href={`/dashboard/student/listing/${property.id}`}
-                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md"
+            {properties.map((property) => {
+              const isPremium = property.isPremium || property.price > 50000;
+              const requiresVerification = isPremium && verificationScore < 70;
+
+              return (
+                <div key={property.id}>
+                  {requiresVerification ? (
+                    <VerificationGate
+                      requiredScore={70}
+                      feature="premium_properties"
+                      fallback={
+                        <FeatureLock
+                          feature="Premium Property"
+                          requiredScore={70}
+                          currentScore={verificationScore}
+                          benefits={[
+                            "Access to premium properties",
+                            "Student discount rates",
+                            "Priority booking"
+                          ]}
+                        />
+                      }
                     >
-                      View Details
-                    </Link>
-                  </div>
+                      <PropertyCard property={property} verificationScore={verificationScore} />
+                    </VerificationGate>
+                  ) : (
+                    <PropertyCard property={property} verificationScore={verificationScore} />
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

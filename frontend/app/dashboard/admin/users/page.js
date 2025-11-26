@@ -74,7 +74,16 @@ export default function UsersPage() {
     }
   };
 
-  if (!session || loading) return <div className="text-center p-4">Loading...</div>;
+    if (!session || loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-50 bg-opacity-70 z-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DashboardLayout sidebarItems={adminSidebarItems}>
@@ -151,7 +160,7 @@ export default function UsersPage() {
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <img
-                        src={user.avatar || '/default-avatar.png'}
+                        src={user.avatar || '/default-avatar.svg'}
                         alt={user.name}
                         className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                       />

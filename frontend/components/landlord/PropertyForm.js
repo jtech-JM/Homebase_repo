@@ -27,7 +27,7 @@ export default function PropertyForm({ property = null }) {
     bathrooms: property?.bathrooms || 1,
     square_feet: property?.square_feet || "",
     available_from: property?.available_from || "",
-    lease_term: property?.lease_term || "12",
+    lease_term: property?.lease_term || "12-months",
     status: property?.status || "available"
   });
 
@@ -215,9 +215,9 @@ export default function PropertyForm({ property = null }) {
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="6">6 months</option>
-              <option value="12">12 months</option>
-              <option value="24">24 months</option>
+              <option value="6-months">6 months</option>
+              <option value="12-months">12 months</option>
+              <option value="24-months">24 months</option>
             </select>
           </div>
         </div>

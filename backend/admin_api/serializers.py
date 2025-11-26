@@ -24,8 +24,13 @@ class UserManagementSerializer(serializers.ModelSerializer):
     def get_avatar(self, obj):
         # Check if user has a profile with avatar
         if hasattr(obj, 'profile') and obj.profile.avatar:
+            # Return absolute URL for avatar
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.profile.avatar.url)
             return obj.profile.avatar.url
-        return None
+        # Return default avatar
+        return '/default-avatar.svg'
 
 
 class PropertyManagementSerializer(serializers.Serializer):

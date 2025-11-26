@@ -6,6 +6,9 @@ class Verification(models.Model):
 		("student_id", "Student ID"),
 		("national_id", "National ID"),
 		("property_proof", "Proof of Property"),
+		("enrollment", "Enrollment Letter"),
+		("profile_photo", "Profile Photo"),
+		("address", "Address Proof"),
 	]
 	STATUS_CHOICES = [
 		("pending", "Pending"),

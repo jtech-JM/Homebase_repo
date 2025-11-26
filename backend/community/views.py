@@ -1,9 +1,10 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers as drf_serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Post, Like, Comment
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
+from verification.access_control import access_control_engine
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -20,7 +21,43 @@ class PostViewSet(viewsets.ModelViewSet):
         
         return queryset
     
+    def list(self, request, *args, **kwargs):
+        """Check verification before allowing community access."""
+        decision = access_control_engine.evaluate_access(
+            request.user,
+            'community_access',
+            required_score=31  # Basic verification required
+        )
+        
+        if not decision.granted:
+            return Response({
+                'verification_required': True,
+                'message': 'Community access requires basic verification (31%+)',
+                'required_score': 31,
+                'current_score': decision.verification_score,
+                'reason': decision.blocking_reason,
+                'verification_url': '/verification'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        return super().list(request, *args, **kwargs)
+    
     def perform_create(self, serializer):
+        """Check verification before allowing post creation."""
+        decision = access_control_engine.evaluate_access(
+            self.request.user,
+            'community_post',
+            required_score=31  # Basic verification required
+        )
+        
+        if not decision.granted:
+            raise drf_serializers.ValidationError({
+                'verification_required': True,
+                'message': 'Creating posts requires basic verification (31%+)',
+                'required_score': 31,
+                'current_score': decision.verification_score,
+                'reason': decision.blocking_reason
+            })
+        
         serializer.save(author=self.request.user)
     
     def perform_update(self, serializer):
@@ -43,6 +80,21 @@ class PostViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
+        """Check verification before allowing likes."""
+        decision = access_control_engine.evaluate_access(
+            request.user,
+            'community_interaction',
+            required_score=31
+        )
+        
+        if not decision.granted:
+            return Response({
+                'verification_required': True,
+                'message': 'Liking posts requires basic verification (31%+)',
+                'required_score': 31,
+                'current_score': decision.verification_score
+            }, status=status.HTTP_403_FORBIDDEN)
+        
         post = self.get_object()
         like, created = Like.objects.get_or_create(user=request.user, post=post)
         
@@ -63,6 +115,21 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         
         elif request.method == 'POST':
+            # Check verification before allowing comments
+            decision = access_control_engine.evaluate_access(
+                request.user,
+                'community_comment',
+                required_score=31
+            )
+            
+            if not decision.granted:
+                return Response({
+                    'verification_required': True,
+                    'message': 'Commenting requires basic verification (31%+)',
+                    'required_score': 31,
+                    'current_score': decision.verification_score
+                }, status=status.HTTP_403_FORBIDDEN)
+            
             serializer = CommentSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(author=request.user, post=post)

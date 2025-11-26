@@ -45,7 +45,7 @@ class ListingSerializer(serializers.ModelSerializer):
         listing = super().update(instance, validated_data)
         if images_data:
             image_urls = self.save_images(images_data, listing.id)
-            listing.images = image_urls
+            listing.images = (listing.images or []) + image_urls  # Append new images to existing
             listing.save()
         return listing
 

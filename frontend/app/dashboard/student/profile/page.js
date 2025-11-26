@@ -5,6 +5,12 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RoleProtectedLayout from '@/components/auth/RoleProtectedLayout';
 import { studentSidebarItems } from '../page';
 import { User, Mail, Phone, MapPin, Calendar, GraduationCap, Save, Edit, Camera, Upload } from 'lucide-react';
+import { 
+  VerificationProgress, 
+  VerificationBadge,
+  ExpirationWarning,
+  VerificationPrompt
+} from '@/components/verification';
 
 export default function StudentProfilePage() {
   const { data: session } = useSession();
@@ -22,6 +28,7 @@ export default function StudentProfilePage() {
     bio: '',
     avatar: null,
   });
+  const [verificationScore, setVerificationScore] = useState(0);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +45,18 @@ export default function StudentProfilePage() {
 
   const fetchProfile = async () => {
     try {
+      // Fetch verification status
+      const verificationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verification/my-status/`, {
+        headers: {
+          'Authorization': `Bearer ${session.accessToken}`,
+        },
+      });
+      if (verificationResponse.ok) {
+        const verificationData = await verificationResponse.json();
+        setVerificationScore(verificationData.score || 0);
+      }
+
+      // Fetch profile
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profiles/me/`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
@@ -50,14 +69,14 @@ export default function StudentProfilePage() {
       
       // Map profile data to form fields
       setProfile({
-        firstName: session.user?.firstName || '',
-        lastName: session.user?.lastName || '',
-        email: session.user?.email || '',
+        firstName: data.first_name || session.user?.firstName || '',
+        lastName: data.last_name || session.user?.lastName || '',
+        email: data.email || session.user?.email || '',
         phone: data.phone || '',
         address: data.address || '',
         dateOfBirth: data.date_of_birth || '',
-        university: data.major || '', // University stored in major field
-        studentId: data.graduation_year || '', // Student ID stored in graduation_year field
+        university: data.university || '',
+        studentId: data.student_id || '',
         major: data.major || '',
         graduationYear: data.graduation_year || '',
         bio: data.bio || '',
@@ -78,7 +97,18 @@ export default function StudentProfilePage() {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      setError(error.message);
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'We\'re having trouble loading your profile. Please refresh the page.';
+      
+      if (!navigator.onLine) {
+        errorMessage = 'You appear to be offline. Please check your internet connection.';
+      } else if (error.message && error.message.includes('401')) {
+        errorMessage = 'Your session has expired. Please log in again.';
+        setTimeout(() => window.location.href = '/login', 3000);
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -111,6 +141,10 @@ export default function StudentProfilePage() {
       formData.append('graduation_year', profile.graduationYear || '');
       formData.append('bio', profile.bio || '');
       
+      // Add university and student_id for manual entry
+      formData.append('university', profile.university || '');
+      formData.append('student_id', profile.studentId || '');
+      
       if (avatarFile) {
         formData.append('avatar', avatarFile);
       }
@@ -123,9 +157,26 @@ export default function StudentProfilePage() {
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Failed to save profile');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || 'Failed to save profile');
+      }
+      
       const data = await response.json();
-      setSuccess('Profile saved successfully!');
+      
+      // Check if verification was invalidated
+      if (data.verification_invalidated) {
+        setSuccess(`Profile updated! ⚠️ ${data.message}`);
+        // Show a more prominent warning
+        setTimeout(() => {
+          if (confirm('Your verification has been invalidated. Would you like to go to the verification page now?')) {
+            window.location.href = '/verification?start=true';
+          }
+        }, 2000);
+      } else {
+        setSuccess('Profile saved successfully!');
+      }
+      
       setEditing(false);
       setAvatarFile(null);
       
@@ -145,7 +196,23 @@ export default function StudentProfilePage() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error saving profile:', error);
-      setError('Failed to save profile. Please try again.');
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'We encountered an issue while saving your profile. Please try again.';
+      
+      if (error.message) {
+        // Use the error message from the server if available
+        errorMessage = error.message;
+      } else if (!navigator.onLine) {
+        errorMessage = 'It looks like you\'re offline. Please check your internet connection and try again.';
+      } else if (error.name === 'TypeError') {
+        errorMessage = 'We\'re having trouble connecting to our servers. Please check your connection and try again in a moment.';
+      }
+      
+      setError(errorMessage);
+      
+      // Auto-clear error after 10 seconds
+      setTimeout(() => setError(''), 10000);
     } finally {
       setSaving(false);
     }
@@ -164,9 +231,17 @@ export default function StudentProfilePage() {
     <RoleProtectedLayout allowedRoles={['student']}>
       <DashboardLayout sidebarItems={studentSidebarItems}>
         <div className="p-6">
+          {/* Expiration Warning */}
+          <div className="mb-6">
+            <ExpirationWarning />
+          </div>
+
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+                <VerificationBadge score={verificationScore} size="md" />
+              </div>
               <p className="text-gray-600 mt-1">Manage your personal information</p>
             </div>
             <button
@@ -178,71 +253,120 @@ export default function StudentProfilePage() {
             </button>
           </div>
 
+          {/* Verification Prompt */}
+          {verificationScore < 70 && (
+            <div className="mb-6">
+              <VerificationPrompt
+                title="Complete Your Verification"
+                message="Increase your verification score to unlock all platform features and student discounts."
+                requiredScore={70}
+                currentScore={verificationScore}
+              />
+            </div>
+          )}
+
           {error && (
-            <div className="p-3 bg-red-50 text-red-700 rounded border border-red-200 mb-4">
-              {error}
+            <div className="p-4 bg-red-50 text-red-800 rounded-lg border border-red-200 mb-6 flex items-start gap-3 animate-fadeIn">
+              <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <p className="font-medium">{error}</p>
+                <p className="text-sm text-red-600 mt-1">If this problem persists, please contact our support team.</p>
+              </div>
+              <button 
+                onClick={() => setError('')} 
+                className="text-red-600 hover:text-red-800 transition-colors"
+                aria-label="Close error message"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           )}
 
           {success && (
-            <div className="p-3 bg-green-50 text-green-700 rounded border border-green-200 mb-4">
-              {success}
+            <div className="p-4 bg-green-50 text-green-800 rounded-lg border border-green-200 mb-6 flex items-start gap-3 animate-fadeIn">
+              <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <p className="font-medium">{success}</p>
+              </div>
+              <button 
+                onClick={() => setSuccess('')} 
+                className="text-green-600 hover:text-green-800 transition-colors"
+                aria-label="Close success message"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           )}
 
-          <form onSubmit={handleSaveProfile} className="space-y-6">
-            {/* Profile Picture */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-lg font-semibold mb-4">Profile Picture</h2>
-              <div className="flex items-center gap-6">
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center border-4 border-gray-300">
-                    {avatarPreview ? (
-                      <img 
-                        src={avatarPreview} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.error('Image failed to load:', avatarPreview);
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <User className="w-16 h-16 text-gray-400" />
-                    )}
-                  </div>
-                  {editing && (
-                    <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-all duration-200 shadow-lg">
-                      <Camera className="w-5 h-5" />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarChange}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">
-                    {profile.firstName} {profile.lastName}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">{profile.email}</p>
-                  {editing && (
-                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-all duration-200">
-                      <Upload className="w-4 h-4" />
-                      Upload Photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarChange}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* Verification Progress Sidebar */}
+            <div className="lg:col-span-1">
+              <VerificationProgress showMilestones={true} showNextSteps={true} />
             </div>
+
+            {/* Profile Form */}
+            <div className="lg:col-span-2">
+              <form onSubmit={handleSaveProfile} className="space-y-6">
+                {/* Profile Picture */}
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h2 className="text-lg font-semibold mb-4">Profile Picture</h2>
+                  <div className="flex items-center gap-6">
+                    <div className="relative">
+                      <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center border-4 border-gray-300">
+                        {avatarPreview ? (
+                          <img 
+                            src={avatarPreview} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error('Image failed to load:', avatarPreview);
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <User className="w-16 h-16 text-gray-400" />
+                        )}
+                      </div>
+                      {editing && (
+                        <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-all duration-200 shadow-lg">
+                          <Camera className="w-5 h-5" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        {profile.firstName} {profile.lastName}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-3">{profile.email}</p>
+                      {editing && (
+                        <label className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-all duration-200">
+                          <Upload className="w-4 h-4" />
+                          Upload Photo
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
             {/* Personal Information */}
             <div className="bg-white p-6 rounded-lg shadow">
@@ -316,22 +440,30 @@ export default function StudentProfilePage() {
               <h2 className="text-lg font-semibold mb-4">Academic Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">University</label>
+                  <label className="block text-sm font-medium mb-1">
+                    University
+                    <span className="text-xs text-gray-500 ml-2">(Can be manually entered)</span>
+                  </label>
                   <input
                     type="text"
                     value={profile.university}
                     onChange={(e) => handleInputChange('university', e.target.value)}
                     disabled={!editing}
+                    placeholder="e.g., University of Nairobi"
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Student ID</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Student ID
+                    <span className="text-xs text-gray-500 ml-2">(Can be manually entered)</span>
+                  </label>
                   <input
                     type="text"
                     value={profile.studentId}
                     onChange={(e) => handleInputChange('studentId', e.target.value)}
                     disabled={!editing}
+                    placeholder="e.g., SCT211-0001/2021"
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                   />
                 </div>
@@ -342,6 +474,7 @@ export default function StudentProfilePage() {
                     value={profile.major}
                     onChange={(e) => handleInputChange('major', e.target.value)}
                     disabled={!editing}
+                    placeholder="e.g., Computer Science"
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                   />
                 </div>
@@ -352,6 +485,7 @@ export default function StudentProfilePage() {
                     value={profile.graduationYear}
                     onChange={(e) => handleInputChange('graduationYear', e.target.value)}
                     disabled={!editing}
+                    placeholder="e.g., 2027"
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                   />
                 </div>
@@ -374,19 +508,21 @@ export default function StudentProfilePage() {
               </div>
             </div>
 
-            {/* Save Button */}
-            {editing && (
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            )}
-          </form>
+                {/* Save Button */}
+                {editing && (
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                )}
+              </form>
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     </RoleProtectedLayout>

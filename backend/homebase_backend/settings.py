@@ -262,3 +262,9 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # EMAIL_HOST_USER = "gachihijoel234@gmail.com"
 # EMAIL_HOST_PASSWORD = "uqenqzwoaanlkpnw"
 # DEFAULT_FROM_EMAIL = "gachihijoel234@gmail.com"
+
+# Google Cloud Vision API Configuration
+# Note: Billing must be enabled to use Google Vision API
+# Currently using Tesseract OCR (free, no billing required)
+GOOGLE_CLOUD_VISION_API_KEY = os.getenv('GOOGLE_CLOUD_VISION_API_KEY', 'AIzaSyCMFTfjrIclBpy9kerqb7UIbEBj_xXtPd0')
+USE_GOOGLE_VISION = False  # Set to True to use Google Vision (requires billing)

@@ -82,6 +82,6 @@ By reducing agent dependency, scams, and hidden costs, this platform ensures a *
 
 1. Clone the repository  
    ```bash
-   git clone https://github.com/your-username/homebase.git
+   git clone https://github.com/jtech-JM/Homebase_repo.git
    cd homebase
 # Homebase_repo

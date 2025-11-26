@@ -48,7 +48,7 @@ const config = {
           // Get user details using the token
           const userRes = await fetch("http://localhost:8000/api/auth/users/me/", {
             headers: {
-              "Authorization": `JWT ${data.access}`,
+              "Authorization": `Bearer ${data.access}`,
               "Content-Type": "application/json",
             },
           });
@@ -65,7 +65,7 @@ const config = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile, trigger }) {
       if (user) {
         token.role = user.role;
         token.id = user.id;
@@ -73,6 +73,25 @@ const config = {
         token.refreshToken = user.refreshToken;
       }
 
+      // If session is being updated (e.g., after role change), refresh user data from backend
+      if (trigger === "update" && token.accessToken) {
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/users/me/`, {
+            headers: {
+              "Authorization": `Bearer ${token.accessToken}`,
+              "Content-Type": "application/json",
+            },
+          });
+          
+          if (res.ok) {
+            const updatedUser = await res.json();
+            token.role = updatedUser.role;
+            token.verification_status = updatedUser.verification_status || "pending";
+          }
+        } catch (err) {
+          console.error("Error refreshing user data:", err);
+        }
+      }
 
       // For OAuth logins (Google, GitHub, Facebook)
       if (account && profile && !user?.accessToken) {
@@ -110,11 +129,17 @@ const config = {
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token, trigger, newSession }) {
       session.user.role = token.role;
       session.user.id = token.id;
       session.accessToken = token.accessToken;
       session.refreshToken = token.refreshToken;
+      
+      // If this is a session update, ensure the new data is properly set
+      if (trigger === "update" && newSession) {
+        session.user.role = newSession.user?.role || token.role;
+      }
+      
       return session;
     },
   },

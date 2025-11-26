@@ -9,28 +9,29 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/login?callbackUrl=/dashboard/admin");
+      router.replace("/login?callbackUrl=/dashboard/admin");
       return;
     }
 
     if (status === "authenticated" && session?.user) {
-      const userRole = session.user.role;
+      const role = session.user.role;
 
-      if (userRole === "pending") {
-        router.push("/select_role");
+      if (role === "pending") {
+        router.replace("/select_role");
         return;
       }
 
-      if (userRole !== "admin") {
-        router.push(`/dashboard/${userRole}`);
+      if (role !== "admin") {
+        router.replace(`/dashboard/${role}`);
         return;
       }
     }
   }, [status, session, router]);
 
-  if (status === "loading") {
+  // Show spinner while loading or if unauthorized
+  if (status === "loading" || !session || session.user.role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-50 bg-opacity-70 z-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Loading...</p>
@@ -39,9 +40,6 @@ export default function AdminLayout({ children }) {
     );
   }
 
-  if (status === "unauthenticated" || session?.user?.role !== "admin") {
-    return null;
-  }
-
+  // Render admin content
   return <>{children}</>;
 }

@@ -23,7 +23,12 @@ export default function DashboardPage() {
       return;
     }
 
+    // Debug: Log current session
+    console.log("Dashboard - Current session:", session);
+    console.log("Dashboard - User role:", session.user?.role);
+
     if (session.user?.role === "pending") {
+      console.log("Dashboard - Role is still pending, redirecting to select_role");
       router.push("/select_role");
       return;
     }

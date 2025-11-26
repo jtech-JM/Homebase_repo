@@ -4,6 +4,11 @@ import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { studentSidebarItems } from '../page';
 import { CreditCard, Calendar, DollarSign, CheckCircle, Clock, AlertTriangle, Receipt, TrendingUp, Filter } from 'lucide-react';
+import { 
+  VerificationBadge,
+  VerificationPrompt,
+  ExpirationWarning
+} from '@/components/verification';
 
 export default function StudentPaymentsPage() {
   const { data: session } = useSession();
@@ -12,6 +17,7 @@ export default function StudentPaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all'); // all, pending, completed
+  const [verificationScore, setVerificationScore] = useState(0);
 
   useEffect(() => {
     if (session) {
@@ -22,6 +28,18 @@ export default function StudentPaymentsPage() {
 
   const fetchPayments = async () => {
     try {
+      // Fetch verification status
+      const verificationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verification/my-status/`, {
+        headers: {
+          'Authorization': `Bearer ${session.accessToken}`,
+        },
+      });
+      if (verificationResponse.ok) {
+        const verificationData = await verificationResponse.json();
+        setVerificationScore(verificationData.score || 0);
+      }
+
+      // Fetch payments
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/student/?status=${filter}`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
@@ -75,10 +93,18 @@ export default function StudentPaymentsPage() {
 
   return (
     <DashboardLayout sidebarItems={studentSidebarItems}>
+      {/* Expiration Warning */}
+      <div className="mb-6">
+        <ExpirationWarning />
+      </div>
+
       {/* Page Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Payment Center</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900">Payment Center</h1>
+            <VerificationBadge score={verificationScore} size="md" />
+          </div>
           <p className="text-gray-600 mt-1">Manage your rent payments and view payment history</p>
         </div>
         <div className="flex items-center gap-4">
@@ -96,6 +122,33 @@ export default function StudentPaymentsPage() {
           </div>
         </div>
       </div>
+
+      {/* Student Discount Banner */}
+      {verificationScore >= 70 && (
+        <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-green-900">Student Discount Active</p>
+              <p className="text-sm text-green-700">You're receiving 10% off on all payments with your verified student status!</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Verification Prompt for Discounts */}
+      {verificationScore < 70 && verificationScore >= 30 && (
+        <div className="mb-6">
+          <VerificationPrompt
+            title="Unlock Student Payment Discounts"
+            message="Complete your verification to receive 10% off on all rent payments."
+            requiredScore={70}
+            currentScore={verificationScore}
+          />
+        </div>
+      )}
 
       {/* Error Alert */}
       {error && (
@@ -222,9 +275,21 @@ export default function StudentPaymentsPage() {
 
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <div className="text-xl font-bold text-gray-900">
-                        ${payment.amount.toLocaleString()}
+                      <div className="flex items-center gap-2">
+                        {verificationScore >= 70 && payment.discount_applied && (
+                          <span className="text-sm text-gray-500 line-through">
+                            ${(payment.amount / 0.9).toFixed(2)}
+                          </span>
+                        )}
+                        <div className="text-xl font-bold text-gray-900">
+                          ${payment.amount.toLocaleString()}
+                        </div>
                       </div>
+                      {verificationScore >= 70 && payment.discount_applied && (
+                        <div className="text-xs text-green-600 font-medium mt-1">
+                          10% Student Discount Applied
+                        </div>
+                      )}
                       {payment.status === 'pending' && (
                         <button
                           onClick={() => handlePayment(payment.id)}

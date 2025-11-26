@@ -32,7 +32,7 @@ export default function AgentDashboard() {
     // Fetch agent dashboard data
     const fetchDashboardData = async () => {
       try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent/dashboard`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/agent/dashboard`, {
           headers: {
             'Authorization': `Bearer ${session.accessToken}`,
           },

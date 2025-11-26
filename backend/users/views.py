@@ -72,7 +72,22 @@ class UserViewSet(viewsets.ModelViewSet):
         request.user.role = role
         request.user.save()
 
-        return Response({"message": "Role updated successfully"})
+        # Generate fresh JWT tokens with the updated role
+        refresh = RefreshToken.for_user(request.user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        return Response({
+            "message": "Role updated successfully",
+            "user": {
+                "id": request.user.id,
+                "email": request.user.email,
+                "role": request.user.role,
+                "name": f"{request.user.first_name} {request.user.last_name}".strip() or request.user.email.split('@')[0]
+            },
+            "access": access_token,
+            "refresh": refresh_token
+        })
 
     @action(detail=False, methods=["post"], permission_classes=[permissions.AllowAny])
     def social_login(self, request):

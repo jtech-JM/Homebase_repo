@@ -37,7 +37,17 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     // Check authentication and role
-    if (status === 'loading') return;
+    if (status === "loading") {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-50 bg-opacity-70 z-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+        <p className="text-gray-600 text-lg">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
 
     if (!session) {
       router.push('/login');
@@ -89,9 +99,17 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, []);
 
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
+if (status === "loading") {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-50 bg-opacity-70 z-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+        <p className="text-gray-600 text-lg">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
 
   if (!session || session.user?.role !== 'admin') {
     return null;
