@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSession } from 'next-auth/react';
 
 export default function AdminVerificationReview() {
-  const { user } = useAuth();
+  const { data: session, status } = useSession();
   const [verifications, setVerifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
@@ -32,7 +32,7 @@ export default function AdminVerificationReview() {
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${session?.accessToken}`,
         },
       });
 
@@ -89,7 +89,7 @@ export default function AdminVerificationReview() {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${session?.accessToken}`,
           },
         }
       );
@@ -114,7 +114,29 @@ export default function AdminVerificationReview() {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  if (!user?.is_staff) {
+  if (status === "loading") {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-50 bg-opacity-70 z-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
+          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
+          <p className="mt-2">You must be logged in to access this page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (session.user?.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">

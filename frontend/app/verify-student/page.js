@@ -1,6 +1,10 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { CheckCircle, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
+import RoleProtectedLayout from '../../components/auth/RoleProtectedLayout';
+import StudentVerificationFlow from '../../components/verification/StudentVerificationFlow';
 
 /**
  * Redirect page - /verify-student now redirects to /verification
@@ -8,6 +12,7 @@ import { useRouter } from 'next/navigation';
  */
 export default function VerifyStudentPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showFlow, setShowFlow] = useState(false);
