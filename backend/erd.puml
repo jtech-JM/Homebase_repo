@@ -1,0 +1,77 @@
+@startuml ERD Simplified
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define primary_key(x) <b>x</b>
+!define foreign_key(x) <i>x</i>
+
+Table(User, "User\n- id (PK)\n- email\n- role\n- verification_level") {
+}
+
+Table(Student, "Student\n- id (PK)\n- user (FK)\n- university") {
+}
+
+Table(Landlord, "Landlord\n- id (PK)\n- user (FK)\n- national_id") {
+}
+
+Table(Agent, "Agent\n- id (PK)\n- user (FK)\n- campus_region") {
+}
+
+Table(Profile, "Profile\n- id (PK)\n- user (FK)\n- bio\n- avatar") {
+}
+
+Table(Listing, "Listing\n- id (PK)\n- landlord (FK)\n- title\n- price\n- status") {
+}
+
+Table(Booking, "Booking\n- id (PK)\n- listing (FK)\n- student (FK)\n- start_date\n- monthly_rent") {
+}
+
+Table(Payment, "Payment\n- id (PK)\n- payer (FK)\n- payee (FK)\n- amount\n- status") {
+}
+
+Table(Escrow, "Escrow\n- id (PK)\n- payment (FK)\n- released") {
+}
+
+Table(MaintenanceRequest, "MaintenanceRequest\n- id (PK)\n- listing (FK)\n- tenant (FK)\n- description") {
+}
+
+Table(Review, "Review\n- id (PK)\n- listing (FK)\n- user (FK)\n- rating") {
+}
+
+Table(Conversation, "Conversation\n- id (PK)\n- listing (FK)") {
+}
+
+Table(Message, "Message\n- id (PK)\n- conversation (FK)\n- sender (FK)\n- content") {
+}
+
+Table(SupportTicket, "SupportTicket\n- id (PK)\n- user (FK)\n- title\n- status") {
+}
+
+Table(Post, "Post\n- id (PK)\n- author (FK)\n- content") {
+}
+
+Table(Comment, "Comment\n- id (PK)\n- post (FK)\n- author (FK)\n- content") {
+}
+
+Table(StudentVerification, "StudentVerification\n- id (PK)\n- user (FK)\n- overall_status\n- verification_score") {
+}
+
+User ||--o{ Student
+User ||--o{ Landlord
+User ||--o{ Agent
+User ||--|| Profile
+Landlord ||--o{ Listing
+Student ||--o{ Booking
+Listing ||--o{ Booking
+Listing ||--o{ MaintenanceRequest
+Listing ||--o{ Review
+Booking ||--o{ Payment
+Payment ||--|| Escrow
+Conversation ||--o{ Message
+User ||--o{ Conversation
+User ||--o{ Message
+User ||--o{ SupportTicket
+Post ||--o{ Comment
+User ||--o{ Post
+User ||--o{ Comment
+User ||--o{ StudentVerification
+
+@enduml

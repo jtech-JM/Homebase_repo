@@ -1,63 +1,149 @@
-@startuml
-class User {
-  id: int
-  email: string
-  role: string
-  phone: string
-  is_active: bool
-  ...
+@startuml Class Diagram
+left to right direction
+skinparam backgroundColor #FEFEFE
+skinparam class {
+  BackgroundColor #LightBlue
+  BorderColor #000000
+  BorderThickness 1
+}
+skinparam arrowThickness 2
+
+package "User Models" #LightGreen {
+  class User {
+    +id: BigAutoField
+    +email: EmailField
+    +role: CharField
+    +verification_level: CharField
+    +is_active: BooleanField
+    --
+    +has_perm(): bool
+  }
+
+  class Student {
+    +user: OneToOneField(User)
+    +university: CharField
+  }
+
+  class Landlord {
+    +user: OneToOneField(User)
+    +national_id: CharField
+  }
+
+  class Agent {
+    +user: OneToOneField(User)
+    +campus_region: CharField
+  }
+
+  class Profile {
+    +user: OneToOneField(User)
+    +bio: TextField
+    +verified: BooleanField
+  }
 }
 
-class Student {
-  university: string
-  student_id: string
-}
-class Landlord {
-  national_id: string
-}
-class Agent {
-  national_id: string
-  campus_region: string
-}
-class Listing {
-  id: int
-  title: string
-  owner: User
-  ...
-}
-class Payment {
-  id: int
-  amount: float
-  user: User
-  listing: Listing
-  ...
-}
-class Verification {
-  id: int
-  user: User
-  status: string
-  ...
-}
-class Profile {
-  id: int
-  user: User
-  verified: bool
-  ...
-}
-class RBAC {
-  id: int
-  user: User
-  role: string
-  ...
+package "Listing Models" #LightYellow {
+  class Listing {
+    +landlord: ForeignKey(User)
+    +title: CharField
+    +price: DecimalField
+    +status: CharField
+    --
+    +is_available(): bool
+  }
+
+  class Booking {
+    +listing: ForeignKey(Listing)
+    +student: ForeignKey(User)
+    +monthly_rent: DecimalField
+    +status: CharField
+  }
+
+  class MaintenanceRequest {
+    +listing: ForeignKey(Listing)
+    +tenant: ForeignKey(User)
+    +priority: CharField
+  }
+
+  class Review {
+    +listing: ForeignKey(Listing)
+    +user: ForeignKey(User)
+    +rating: IntegerField
+  }
 }
 
-User "1" -- "1" Student
-User "1" -- "1" Landlord
-User "1" -- "1" Agent
-User "1" -- "*" Listing
-User "1" -- "*" Payment
-User "1" -- "1" Verification
-User "1" -- "1" Profile
-User "*" -- "*" RBAC
-Listing "*" -- "1" Payment
+package "Payment Models" #LightCyan {
+  class Payment {
+    +payer: ForeignKey(User)
+    +payee: ForeignKey(User)
+    +amount: DecimalField
+    +status: CharField
+  }
+
+  class Escrow {
+    +payment: OneToOneField(Payment)
+    +released: BooleanField
+  }
+}
+
+package "Messaging Models" #LightPink {
+  class Conversation {
+    +listing: ForeignKey(Listing)
+  }
+
+  class Message {
+    +conversation: ForeignKey(Conversation)
+    +sender: ForeignKey(User)
+    +content: TextField
+    +is_read: BooleanField
+  }
+}
+
+package "Community Models" #LightGray {
+  class Post {
+    +author: ForeignKey(User)
+    +content: TextField
+  }
+
+  class Comment {
+    +post: ForeignKey(Post)
+    +author: ForeignKey(User)
+    +content: TextField
+  }
+}
+
+package "Verification Models" #LightCoral {
+  class StudentVerification {
+    +user: ForeignKey(User)
+    +university: CharField
+    +verification_score: IntegerField
+    +overall_status: CharField
+  }
+}
+
+package "Support Models" #LightSalmon {
+  class SupportTicket {
+    +user: ForeignKey(User)
+    +title: CharField
+    +status: CharField
+  }
+}
+
+User "1" -- "0..1" Student : extends
+User "1" -- "0..1" Landlord : extends
+User "1" -- "0..1" Agent : extends
+User "1" -- "1" Profile : has
+User "1" -- "*" Listing : creates
+Listing "1" -- "*" Booking : has
+Booking "1" -- "*" Payment : has
+Payment "1" -- "1" Escrow : holds
+Listing "1" -- "*" MaintenanceRequest : has
+Listing "1" -- "*" Review : has
+Listing "1" -- "0..1" Conversation : has
+Conversation "1" -- "*" Message : contains
+User "1" -- "*" Message : sends
+User "1" -- "*" SupportTicket : creates
+User "1" -- "*" Post : authors
+Post "1" -- "*" Comment : has
+User "1" -- "*" Comment : authors
+User "1" -- "1" StudentVerification : undergoes
 @enduml

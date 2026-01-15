@@ -1,9 +1,16 @@
 "use client";
 import { usePathname } from "next/navigation";
 import Navigation from "./Navigation";
+import { useState, useEffect } from "react";
 
 export default function ConditionalLayout({ children }) {
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const isDashboard = pathname?.startsWith('/dashboard');
 
   if (isDashboard) {
@@ -11,18 +18,22 @@ export default function ConditionalLayout({ children }) {
     return <>{children}</>;
   }
 
+  // For non-dashboard pages, always render the same structure
+  // The Navigation component handles its own loading state
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Navigation />
-      {children}
+      <main className="flex-1 pt-20"> {/* Consistent padding */}
+        {children}
+      </main>
       <footer className="bg-gray-800 text-white py-12" role="contentinfo">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-xl font-bold mb-4">HomeBase</h3>
-              <p className="text-gray-300 mb-4">
+              <div className="text-gray-300 mb-4">
                 Connecting students with quality accommodation near their campuses.
-              </p>
+              </div>
               <nav aria-label="Social media links">
                 <div className="flex space-x-4">
                   <a href="https://facebook.com/homebase" className="text-gray-300 hover:text-white transition-colors" aria-label="Visit our Facebook page">Facebook</a>
@@ -70,6 +81,6 @@ export default function ConditionalLayout({ children }) {
           </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }

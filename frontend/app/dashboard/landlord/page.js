@@ -10,6 +10,7 @@ import { Home, DollarSign, TrendingUp, FileText, Plus, CheckCircle, CreditCard, 
 
 export const landlordSidebarItems = [
   { label: "Overview", href: "/dashboard/landlord", icon: "📊" },
+  { label: "Profile", href: "/dashboard/landlord/profile", icon: "👤" },
   { label: "My Listings", href: "/dashboard/landlord/listings", icon: "🏠" },
   { label: "Applications", href: "/dashboard/landlord/applications", icon: "📝" },
   { label: "Tenants", href: "/dashboard/landlord/tenants", icon: "👥" },

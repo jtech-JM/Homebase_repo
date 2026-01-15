@@ -1,0 +1,120 @@
+@startuml Component Diagram
+
+package "Frontend" {
+  [Web Browser] as Browser
+  [Mobile App] as Mobile
+}
+
+package "Backend (Django)" {
+  package "Users App" {
+    [User Management] as UserMgmt
+    [Authentication] as Auth
+    [Profiles] as Profiles
+  }
+
+  package "Listings App" {
+    [Listing Management] as ListingMgmt
+    [Booking System] as Booking
+    [Maintenance] as Maint
+    [Reviews] as Reviews
+  }
+
+  package "Payments App" {
+    [Payment Processing] as Payments
+    [Escrow Service] as Escrow
+  }
+
+  package "Verification App" {
+    [Student Verification] as StudentVer
+    [Document Analysis] as DocAnalysis
+    [Peer Verification] as PeerVer
+    [Access Control] as AccessCtrl
+  }
+
+  package "Messaging App" {
+    [Conversations] as Conv
+    [Messages] as Msg
+  }
+
+  package "Community App" {
+    [Posts] as Posts
+    [Comments] as Comments
+    [Likes] as Likes
+  }
+
+  package "Support App" {
+    [Tickets] as Tickets
+    [Support Messages] as SuppMsg
+  }
+
+  package "Admin API" {
+    [Platform Settings] as Settings
+    [Activity Logs] as Logs
+  }
+
+  [Django REST Framework] as DRF
+  [Django ORM] as ORM
+}
+
+package "External Services" {
+  [Payment Gateway] as Gateway
+  [Email Service] as Email
+  [SMS Service] as SMS
+  [Google Vision API] as Vision
+  [Social Auth] as Social
+}
+
+database "Database (SQLite/PostgreSQL)" as DB {
+  [User Data]
+  [Listing Data]
+  [Payment Data]
+  [Verification Data]
+}
+
+Browser --> DRF : HTTP/HTTPS
+Mobile --> DRF : API Calls
+
+DRF --> UserMgmt
+DRF --> Auth
+DRF --> Profiles
+DRF --> ListingMgmt
+DRF --> Booking
+DRF --> Payments
+DRF --> StudentVer
+DRF --> Conv
+DRF --> Posts
+DRF --> Tickets
+DRF --> Settings
+
+UserMgmt --> ORM
+Profiles --> ORM
+ListingMgmt --> ORM
+Booking --> ORM
+Payments --> ORM
+StudentVer --> ORM
+Conv --> ORM
+Posts --> ORM
+Tickets --> ORM
+Settings --> ORM
+
+ORM --> DB
+
+Payments --> Gateway
+StudentVer --> Vision
+Auth --> Social
+DRF --> Email
+DRF --> SMS
+
+Maint --> ListingMgmt
+Reviews --> ListingMgmt
+Escrow --> Payments
+DocAnalysis --> StudentVer
+PeerVer --> StudentVer
+AccessCtrl --> StudentVer
+Msg --> Conv
+Comments --> Posts
+Likes --> Posts
+SuppMsg --> Tickets
+Logs --> Admin
+
+@enduml

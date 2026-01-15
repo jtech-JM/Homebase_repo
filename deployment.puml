@@ -1,0 +1,52 @@
+@startuml Deployment Diagram
+
+node "User Device" as UserDevice {
+  artifact "Web Browser" as Browser
+  artifact "Mobile App" as MobileApp
+}
+
+node "Web Server" as WebServer {
+  artifact "Django Application" as DjangoApp
+  artifact "Nginx/Apache" as WebServerSW
+}
+
+node "Application Server" as AppServer {
+  artifact "Django REST Framework" as DRF
+  artifact "Celery Workers" as Workers
+}
+
+node "Database Server" as DBServer {
+  artifact "PostgreSQL/SQLite" as Database
+}
+
+node "External Services" as ExtServices {
+  artifact "Payment Gateway (e.g., Stripe)" as PaymentGW
+  artifact "Email Service (e.g., SendGrid)" as EmailSvc
+  artifact "SMS Service (e.g., Twilio)" as SMSSvc
+  artifact "Google Vision API" as VisionAPI
+  artifact "Social Auth Providers" as SocialAuth
+}
+
+node "File Storage" as FileStorage {
+  artifact "Cloud Storage (e.g., AWS S3)" as S3
+}
+
+Browser --> WebServerSW : HTTPS
+MobileApp --> WebServerSW : HTTPS
+
+WebServerSW --> DjangoApp : WSGI
+DjangoApp --> DRF : API Calls
+DRF --> Workers : Async Tasks
+
+DjangoApp --> Database : SQL Queries
+Workers --> Database : Updates
+
+DjangoApp --> PaymentGW : Payment Processing
+DjangoApp --> EmailSvc : Email Sending
+DjangoApp --> SMSSvc : SMS Sending
+DjangoApp --> VisionAPI : Document Analysis
+DjangoApp --> SocialAuth : OAuth
+
+DjangoApp --> S3 : File Upload/Download
+
+@enduml

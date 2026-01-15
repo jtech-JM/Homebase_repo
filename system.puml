@@ -1,0 +1,52 @@
+@startuml System Diagram
+left to right direction
+skinparam packageStyle rect
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle uml2
+
+actor Students as Student
+actor Landlords as Landlord
+actor Agents as Agent
+actor Admins as Admin
+
+package "Homebase Platform" as Platform #LightBlue {
+  package "Core Django" as Core #LightGreen {
+    [Settings]
+    [URLs]
+    [Middleware]
+  }
+
+  package "Apps" as Apps #LightYellow {
+    [Users App] as Users
+    [Profiles App] as Profiles
+    [Listings App] as Listings
+    [Payments App] as Payments
+    [Verification App] as Verification
+    [Messaging App] as Messaging
+    [Community App] as Community
+    [Support App] as Support
+    [Admin API App] as AdminAPI
+  }
+
+  database "Database\n(SQLite/PostgreSQL)" as DB #LightGray
+}
+
+package "External Services" as Ext #LightCoral {
+  [Payment Gateway]
+  [Email/SMS Services]
+  [Social Auth]
+  [Document Analysis APIs]
+}
+
+Student --> Platform : Access
+Landlord --> Platform : Manage Listings
+Agent --> Platform : Assist Verification
+Admin --> Platform : Administer
+
+Platform --> DB : Read/Write Data
+Platform --> Ext : Integrate
+
+Core --> Apps : Configures
+Apps --> DB : ORM Queries
+
+@enduml

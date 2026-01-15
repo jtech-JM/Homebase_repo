@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { landlordSidebarItems } from '../page';
-import { Eye, Edit, Trash2, Power, PowerOff, Wrench, Search, Plus } from 'lucide-react';
+import { Eye, Edit, Trash2, Power, PowerOff, Wrench, Search, Plus, MapPin, Bed, Bath } from 'lucide-react';
 
 export default function ListingsPage() {
   const { data: session } = useSession();
@@ -123,7 +123,7 @@ export default function ListingsPage() {
                   <Plus className="w-12 h-12 text-blue-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No listings yet</h3>
-                <p className="text-gray-500 mb-6">Get started by creating your first property listing</p>
+                <div className="text-gray-500 mb-6">Get started by creating your first property listing</div>
                 <Link
                   href="/dashboard/landlord/properties/new"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
@@ -173,29 +173,30 @@ export default function ListingsPage() {
 
                 <div className="p-5">
                   <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-1">{listing.title}</h3>
-                  <p className="text-gray-600 text-sm mb-3 flex items-start gap-1">
-                    <div className="w-4 h-4 mt-0.5 flex-shrink-0">
-                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    {listing.address}
-                  </p>
+                  
+                  {/* Fixed: Changed from p to div for location */}
+                  <div className="text-gray-600 text-sm mb-3 flex items-start gap-1">
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400" />
+                    <span>{listing.address}</span>
+                  </div>
+
                   <p className="text-emerald-600 font-bold text-lg mb-3">
                     ${listing.price.toLocaleString()}/month
                   </p>
+                  
+                  {/* Fixed: Changed from p to div for amenities */}
                   <div className="text-sm text-gray-500 mb-4 flex items-center gap-4">
                     <span className="flex items-center gap-1">
                       <div className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center">
-                        <span className="text-xs text-blue-600 font-medium">{listing.bedrooms}</span>
+                        <Bed className="w-3 h-3 text-blue-600" />
                       </div>
-                      bed
+                      {listing.bedrooms} bed
                     </span>
                     <span className="flex items-center gap-1">
                       <div className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center">
-                        <span className="text-xs text-blue-600 font-medium">{listing.bathrooms}</span>
+                        <Bath className="w-3 h-3 text-blue-600" />
                       </div>
-                      bath
+                      {listing.bathrooms} bath
                     </span>
                     <span className="text-gray-400">•</span>
                     <span className="capitalize">{listing.property_type}</span>

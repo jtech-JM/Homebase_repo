@@ -41,12 +41,15 @@ class ListingSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         images_data = self.context['request'].FILES.getlist('images[]')
-        validated_data.pop('images', None)  # Remove images from validated_data
+        # If images are provided in JSON, use them; otherwise keep existing
+        current_images = validated_data.pop('images', instance.images or [])
         listing = super().update(instance, validated_data)
+        # Append any uploaded files to the current images
         if images_data:
             image_urls = self.save_images(images_data, listing.id)
-            listing.images = (listing.images or []) + image_urls  # Append new images to existing
-            listing.save()
+            current_images = (current_images or []) + image_urls
+        listing.images = current_images
+        listing.save()
         return listing
 
     def save_images(self, images_data, listing_id):

@@ -1,14 +1,18 @@
 "use client";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function AdminLayout({ children }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
+    if (status === "loading") return;
+    
     if (status === "unauthenticated") {
+      setIsRedirecting(true);
       router.replace("/login?callbackUrl=/dashboard/admin");
       return;
     }
@@ -17,19 +21,21 @@ export default function AdminLayout({ children }) {
       const role = session.user.role;
 
       if (role === "pending") {
+        setIsRedirecting(true);
         router.replace("/select_role");
         return;
       }
 
       if (role !== "admin") {
+        setIsRedirecting(true);
         router.replace(`/dashboard/${role}`);
         return;
       }
     }
   }, [status, session, router]);
 
-  // Show spinner while loading or if unauthorized
-  if (status === "loading" || !session || session.user.role !== "admin") {
+  // Show spinner only during initial loading or redirects
+  if (status === "loading" || isRedirecting || !session || session.user.role !== "admin") {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gray-50 bg-opacity-70 z-50">
         <div className="text-center">

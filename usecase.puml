@@ -1,0 +1,115 @@
+@startuml Use Case Diagram
+left to right direction
+skinparam backgroundColor #FEFEFE
+skinparam usecase {
+  BackgroundColor #LightBlue
+  BorderColor #000000
+  BorderThickness 2
+}
+skinparam actor {
+  BackgroundColor #LightGreen
+  BorderColor #000000
+}
+
+actor Student
+actor Landlord
+actor Agent
+actor Admin
+actor "Verification System" as System
+
+rectangle "User Management" #LightYellow {
+  usecase "Register Account" as UC1
+  usecase "Login" as UC2
+  usecase "Update Profile" as UC3
+  usecase "Verify Identity" as UC4
+}
+
+rectangle "Listing Management" #LightCyan {
+  usecase "Create Listing" as UC5
+  usecase "Edit Listing" as UC6
+  usecase "View Listings" as UC7
+  usecase "Search Listings" as UC8
+}
+
+rectangle "Booking & Payment" #LightGreen {
+  usecase "Book Listing" as UC9
+  usecase "Make Payment" as UC10
+  usecase "Release Escrow" as UC11
+  usecase "Request Maintenance" as UC12
+}
+
+rectangle "Community & Messaging" #LightPink {
+  usecase "Post in Community" as UC13
+  usecase "Comment on Post" as UC14
+  usecase "Send Message" as UC15
+  usecase "Start Conversation" as UC16
+}
+
+rectangle "Support & Review" #LightGray {
+  usecase "Submit Support Ticket" as UC17
+  usecase "Review Listing" as UC18
+  usecase "Peer Verify User" as UC19
+}
+
+rectangle "Admin Functions" #LightCoral {
+  usecase "Manage Platform Settings" as UC20
+  usecase "Review Verifications" as UC21
+  usecase "Monitor Activity" as UC22
+  usecase "Assign Agents" as UC23
+}
+
+Student --> UC1
+Student --> UC2
+Student --> UC3
+Student --> UC4
+Student --> UC7
+Student --> UC8
+Student --> UC9
+Student --> UC10
+Student --> UC12
+Student --> UC13
+Student --> UC14
+Student --> UC15
+Student --> UC16
+Student --> UC17
+Student --> UC18
+Student --> UC19
+
+Landlord --> UC1
+Landlord --> UC2
+Landlord --> UC3
+Landlord --> UC4
+Landlord --> UC5
+Landlord --> UC6
+Landlord --> UC7
+Landlord --> UC8
+Landlord --> UC11
+Landlord --> UC13
+Landlord --> UC14
+Landlord --> UC15
+Landlord --> UC16
+Landlord --> UC17
+
+Agent --> UC1
+Agent --> UC2
+Agent --> UC3
+Agent --> UC4
+Agent --> UC7
+Agent --> UC8
+Agent --> UC13
+Agent --> UC14
+Agent --> UC15
+Agent --> UC16
+Agent --> UC17
+Agent --> UC21
+Agent --> UC23
+
+Admin --> UC20
+Admin --> UC21
+Admin --> UC22
+
+System --> UC4
+System --> UC10
+System --> UC11
+
+@enduml
